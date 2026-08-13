@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 # VulnFeed miner registration on Base Sepolia (Telegraph)
-# Usage: ./register-miner.sh [--dry-run]
-# Requires: cast (foundry), a Base Sepolia funded wallet, .env with MINER_PRIVATE_KEY
+# Usage:
+#   1. cp .env.example .env  &&  edit .env (MINER_PRIVATE_KEY + FEE_ADDRESS)
+#   2. ./scripts/register-miner.sh [--dry-run]
+# Requires: cast (foundry), a Base Sepolia funded wallet
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
+
+# Load .env if present (MINER_PRIVATE_KEY, FEE_ADDRESS, RPC_URL)
+if [[ -f "$ROOT/.env" ]]; then
+  set -a; source "$ROOT/.env"; set +a
+fi
 
 DIAMOND="0x5a2324aA18613FAD4e44bDF0d6c73Ec1f6D87ff8"
 RPC="${RPC_URL:-https://sepolia.base.org}"
