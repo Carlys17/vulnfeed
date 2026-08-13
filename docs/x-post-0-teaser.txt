@@ -1,0 +1,1 @@
+Building a deterministic smart-contract security Miner for @Telegraphprotoc hackathon. Slither-powered risk reports for any Base contract address — shipping ahead of kickoff. #Telegraph #BuildInPublic

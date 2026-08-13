@@ -1,0 +1,1 @@
+Cooking something for the @Telegraphprotoc hackathon. A security intelligence miner for Base, wrapping real static analysis into a deterministic, ranked signal. More at kickoff. #Telegraph #BuildInPublic

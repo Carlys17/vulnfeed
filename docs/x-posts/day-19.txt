@@ -1,0 +1,8 @@
+Day 3 of the @Telegraphprotoc hackathon: Chainguard is live.
+
+A watchlist app that monitors Base contracts in real time, powered by VulnFeed (ONCHAIN_TX_LOOKUP). Add any contract address → rating, risk score and findings, re-checked every 60s.
+
+Try it: https://carly17.my.id/chainguard/
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #BuildInPublic
