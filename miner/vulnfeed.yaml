@@ -1,0 +1,53 @@
+version: "1"
+kind: miner
+id: 10001
+slug: vulnfeed-onchain-security
+protocol: generic
+name: VulnFeed On-Chain Security Intelligence
+description: "Deterministic smart-contract security miner. Given an EVM contract address on Base, it fetches verified source (Sourcify/Blockscout) and runs static analysis (Slither) to return a structured risk report: rating (clean/moderate/elevated/critical), risk score 0-100, exploit probability, severity counts, and per-finding details. Built for automated smart contract auditing agents."
+base_url: https://carly17.my.id/vulnfeed
+
+docs:
+  website: https://carly17.my.id/vulnfeed
+  repository: https://github.com/Carlys17/vulnfeed
+
+endpoints:
+  - path: /v1/analyze
+    external_path: /v1/analyze
+    method: POST
+    description: Analyze an EVM contract address for smart-contract vulnerabilities
+    request_body:
+      type: object
+      required: [address]
+      properties:
+        address:
+          type: string
+          pattern: '^0x[a-fA-F0-9]{40}$'
+          description: EVM contract address (0x...)
+        chain_id:
+          type: integer
+        rpc_url:
+          type: string
+
+semantics:
+  signal_mapping:
+    label_field: rating
+    confidence_field: exploit_probability
+    reason_field: summary
+  supported_intents:
+    - ONCHAIN_TX_LOOKUP
+
+on_chain:
+  transform: direct
+  min_price_usdc: 0.01
+  fields:
+    integers:
+      - index: 0
+        name: risk_score_x100
+        source_path: risk_score
+        multiplier: 100
+  request:
+    - endpoint: /v1/analyze
+      method: POST
+      body:
+        address: { source: strings.0 }

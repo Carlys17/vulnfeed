@@ -1,0 +1,17 @@
+[Unit]
+Description=VulnFeed Telegraph Miner (ONCHAIN_TX_LOOKUP)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/work/vulnfeed
+Environment=VULNFEED_HOST=127.0.0.1
+Environment=VULNFEED_PORT=8185
+Environment=VULNFEED_CHAIN_ID=8453
+ExecStart=/root/.venv-tg/bin/python -m uvicorn app.server:app --host 127.0.0.1 --port 8185
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
