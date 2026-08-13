@@ -8,7 +8,7 @@ import time
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
 from . import config, core, resolve
@@ -28,6 +28,17 @@ class Query(BaseModel):
     address: str = Field(..., description="EVM contract address (0x...)")
     chain_id: int | None = Field(None, description="optional chain id override")
     rpc_url: str | None = Field(None, description="optional RPC override")
+
+
+@app.get("/vulnfeed.yaml")
+def vulnfeed_yaml() -> Response:
+    """Serve the raw miner YAML bytes so the node's SHA-256 check passes at registration."""
+    yaml_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "miner", "vulnfeed.yaml")
+    try:
+        with open(yaml_path, "rb") as fh:
+            return Response(content=fh.read(), media_type="text/yaml")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="miner YAML not found")
 
 
 @app.get("/health")
