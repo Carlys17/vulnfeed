@@ -4,30 +4,78 @@ id: 10001
 slug: vulnfeed-onchain-security
 protocol: generic
 name: VulnFeed On-Chain Security Intelligence
-description: "Deterministic smart-contract security miner. Given an EVM contract address on Base, it fetches verified source (Sourcify/Blockscout) and runs static analysis (Slither) to return a structured risk report: rating (clean/moderate/elevated/critical), risk score 0-100, exploit probability, severity counts, and per-finding details. Built for automated smart contract auditing agents."
+description: >
+  Deterministic smart-contract security miner for Base. Given an EVM contract
+  address, fetches verified source from Sourcify or Blockscout and returns a
+  structured Slither risk report with ratings, severity counts, exploit
+  probability, and per-finding details.
 base_url: https://carly17.my.id/vulnfeed
 
 docs:
   website: https://carly17.my.id/vulnfeed
   repository: https://github.com/Carlys17/vulnfeed
+  documentation: https://github.com/Carlys17/vulnfeed#readme
+
+auth:
+  type: none
+rate_limit_per_sec: 2
+cache_ttl_sec: 300
+circuit_threshold: 5
+circuit_cooldown_seconds: 30
 
 endpoints:
   - path: /v1/analyze
     external_path: /v1/analyze
     method: POST
-    description: Analyze an EVM contract address for smart-contract vulnerabilities
-    request_body:
-      type: object
-      required: [address]
-      properties:
-        address:
-          type: string
-          pattern: '^0x[a-fA-F0-9]{40}$'
-          description: EVM contract address (0x...)
-        chain_id:
-          type: integer
-        rpc_url:
-          type: string
+    description: Analyze a Base EVM contract address for smart-contract vulnerabilities.
+    intents: [ONCHAIN_TX_LOOKUP]
+    params:
+      body:
+        required:
+          - name: address
+            type: string
+            intents: [ONCHAIN_TX_LOOKUP]
+            description: EVM contract address on Base (0x-prefixed, 40 hex characters).
+            example: "0x0000000000000000000000000000000000000000"
+        optional:
+          - name: chain_id
+            type: integer
+            intents: [ONCHAIN_TX_LOOKUP]
+            description: EVM chain ID. Defaults to Base mainnet 8453.
+            default: 8453
+          - name: rpc_url
+            type: string
+            intents: [ONCHAIN_TX_LOOKUP]
+            description: Optional HTTPS JSON-RPC endpoint override.
+
+input_schema:
+  type: object
+  required: [address]
+  properties:
+    address:
+      type: string
+      pattern: '^0x[a-fA-F0-9]{40}$'
+    chain_id:
+      type: integer
+      default: 8453
+    rpc_url:
+      type: string
+
+output_schema:
+  type: object
+  required: [intent, address, risk_score, rating, exploit_probability, findings]
+  properties:
+    intent: { type: string }
+    address: { type: string }
+    risk_score: { type: number, minimum: 0, maximum: 100 }
+    rating: { type: string }
+    exploit_probability: { type: number, minimum: 0, maximum: 1 }
+    severity_counts: { type: object }
+    summary: { type: string }
+    findings: { type: array }
+    tool: { type: string }
+    warnings: { type: array }
+    error: { type: [string, "null"] }
 
 semantics:
   signal_mapping:
@@ -38,12 +86,14 @@ semantics:
     - ONCHAIN_TX_LOOKUP
 
 on_chain:
+  description: Risk score and exploit probability for a Base contract.
   transform: direct
   min_price_usdc: 0.01
   fields:
     integers:
       - index: 0
         name: risk_score_x100
+        description: Risk score from 0 to 100 multiplied by 100.
         source_path: risk_score
         multiplier: 100
   request:
@@ -51,3 +101,23 @@ on_chain:
       method: POST
       body:
         address: { source: strings.0 }
+        chain_id: { source: numbers.0, optional: true }
+        rpc_url: { source: strings.1, optional: true }
+
+limitations:
+  - code: MAX_PARAM_SIZE
+    message: Contract address must be a 0x-prefixed 40-hex-character address.
+    param: address
+    property: length
+    value_num: 42
+    operator: gt
+  - code: MAX_PARAM_SIZE
+    message: RPC URL must use HTTPS.
+    param: rpc_url
+    property: length
+    value_num: 2048
+    operator: gt
+
+# YAML is public. No API keys or private credentials belong in this file.
+# Hosted copy: https://carly17.my.id/vulnfeed/vulnfeed.yaml
+# SHA-256 is computed from the exact hosted bytes before registration.
