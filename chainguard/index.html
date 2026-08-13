@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChainGuard — Real-time Smart Contract Security Monitor</title>
+<style>
+:root {
+  --bg: #0d1117; --surface: #161b22; --border: #30363d;
+  --text: #e6edf3; --muted: #8b949e;
+  --green: #2ea043; --yellow: #d29922; --orange: #db6d28; --red: #f85149; --gray: #6e7681;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
+.container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
+header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; }
+header h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
+header h1 .badge { font-size: 11px; background: var(--border); padding: 2px 8px; border-radius: 12px; color: var(--muted); }
+header p { color: var(--muted); margin-top: 4px; font-size: 14px; }
+.badge-tg { color: var(--green); }
+.search-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+.search-card h2 { font-size: 16px; margin-bottom: 12px; }
+.input-row { display: flex; gap: 8px; }
+.input-row input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
+.input-row input:focus { outline: none; border-color: var(--green); }
+.input-row button { padding: 8px 16px; border-radius: 6px; border: none; background: var(--green); color: white; cursor: pointer; font-size: 14px; font-weight: 500; }
+.input-row button:hover { opacity: 0.9; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.stat-card .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.stat-card .value { font-size: 22px; font-weight: 600; }
+.stat-card .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.watcher-list { margin-bottom: 24px; }
+.watcher-list h2 { font-size: 16px; margin-bottom: 12px; }
+.watch-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; margin-bottom: 8px; }
+.watch-row .addr { font-family: monospace; font-size: 13px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.watch-row .rating { font-weight: 600; font-size: 13px; padding: 2px 8px; border-radius: 12px; }
+.rating-clean { background: rgba(46,160,67,0.15); color: var(--green); }
+.rating-moderate { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.rating-elevated { background: rgba(219,109,40,0.15); color: var(--orange); }
+.rating-critical { background: rgba(248,81,73,0.15); color: var(--red); }
+.rating-no_source { background: rgba(110,118,129,0.15); color: var(--gray); }
+.watch-row .score { font-size: 14px; font-weight: 500; }
+.watch-row .last-check { font-size: 11px; color: var(--muted); }
+.watch-row .btn-del { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 16px; }
+.watch-row .btn-del:hover { color: var(--red); }
+.detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; display: none; }
+.detail-card.show { display: block; }
+.detail-card h2 { font-size: 16px; margin-bottom: 16px; }
+.severity-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
+.sev-box { text-align: center; padding: 10px; border-radius: 6px; }
+.sev-box.high { background: rgba(248,81,73,0.15); color: var(--red); }
+.sev-box.medium { background: rgba(210,153,34,0.15); color: var(--yellow); }
+.sev-box.low { background: rgba(46,160,67,0.15); color: var(--green); }
+.sev-box.info { background: rgba(139,148,158,0.15); color: var(--muted); }
+.sev-box .num { font-size: 20px; font-weight: 600; }
+.sev-box .lbl { font-size: 11px; color: var(--muted); }
+.findings { max-height: 300px; overflow-y: auto; }
+.finding { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.finding:last-child { border-bottom: none; }
+.finding .tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 8px; }
+.finding .tag.H { background: rgba(248,81,73,0.2); color: var(--red); }
+.finding .tag.M { background: rgba(210,153,34,0.2); color: var(--yellow); }
+.finding .tag.L { background: rgba(46,160,67,0.2); color: var(--green); }
+.finding .tag.I { background: rgba(139,148,158,0.2); color: var(--muted); }
+.empty-state { text-align: center; padding: 40px; color: var(--muted); }
+.loading { color: var(--muted); font-style: italic; }
+footer { border-top: 1px solid var(--border); padding-top: 16px; color: var(--muted); font-size: 12px; }
+footer a { color: var(--green); text-decoration: none; }
+@media(max-width:600px){ .severity-grid{ grid-template-columns: repeat(2,1fr); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>ChainGuard <span class="badge">Telegraph Miner: ONCHAIN_TX_LOOKUP</span></h1>
+    <p>Real-time smart-contract security monitor powered by <a href="https://github.com/Carlys17/vulnfeed" target="_blank" rel="noopener">VulnFeed</a> on Telegraph Protocol · Base mainnet</p>
+  </header>
+
+  <div class="search-card">
+    <h2>Add contract to watchlist</h2>
+    <div class="input-row">
+      <input id="addr-input" placeholder="Paste Base contract address (0x...)" />
+      <button id="add-btn">Add</button>
+    </div>
+    <p style="margin-top:10px;font-size:12px;color:var(--muted)">Try: <a href="#" onclick="fill('0x2626664c2603336E57B271c5C0b26F421741e481');return false">SwapRouter02</a> · <a href="#" onclick="fill('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913');return false">USDC</a> · <a href="#" onclick="fill('0x4200000000000000000000000000000000000006');return false">WETH</a></p>
+  </div>
+
+  <div class="stats" id="stats">
+    <div class="stat-card"><div class="label">Contracts watched</div><div class="value" id="st-count">0</div><div class="sub">watchlist</div></div>
+    <div class="stat-card"><div class="label">Latest check</div><div class="value" id="st-time">—</div><div class="sub">UTC</div></div>
+    <div class="stat-card"><div class="label">Total requests</div><div class="value" id="st-reqs">0</div><div class="sub">powered by VulnFeed</div></div>
+    <div class="stat-card"><div class="label">Critical alerts</div><div class="value" id="st-critical">0</div><div class="sub">contracts needing review</div></div>
+  </div>
+
+  <div class="watcher-list" id="watchlist">
+    <h2>Watchlist</h2>
+    <div id="watchlist-body">
+      <div class="empty-state">No contracts added yet. Paste an address above to start monitoring.</div>
+    </div>
+  </div>
+
+  <div class="detail-card" id="detail">
+    <h2 id="detail-title">Contract Details</h2>
+    <div id="detail-body"></div>
+  </div>
+
+  <footer>
+    Built for the <a href="https://hackathon.telegraphprotocol.com" target="_blank" rel="noopener">Telegraph Hackathon</a> · Miner runs on <a href="https://carly17.my.id/vulnfeed/health" target="_blank" rel="noopener">Base</a>
+  </footer>
+</div>
+
+<script>
+const API = 'https://carly17.my.id/vulnfeed/v1/analyze';
+const LS_KEY = 'chainguard_wl';
+let requestsTotal = 0;
+
+function fill(addr) { document.getElementById('addr-input').value = addr; }
+function lsLoad() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; } }
+function lsSave(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+
+async function analyze(addr) {
+  const t0 = performance.now();
+  try {
+    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({address: addr}) });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const d = await r.json();
+    d._latency = Math.round(performance.now() - t0);
+    d._ts = new Date().toISOString();
+    return d;
+  } catch(e) { return { error: e.message }; }
+}
+
+async function refreshAll() {
+  const list = lsLoad();
+  if (!list.length) return;
+  const now = new Date().toISOString();
+  document.getElementById('st-time').textContent = new Date().toLocaleString('en-US',{timeZone:'UTC'});
+  for (const item of list) {
+    if (item.status === 'loading') continue;
+    item.status = 'loading';
+    renderList();
+    const r = await analyze(item.addr);
+    item.status = 'done';
+    item.result = r;
+    item.lastCheck = now;
+    if (r && r.risk_score !== undefined) requestsTotal += 1;
+    document.getElementById('st-reqs').textContent = requestsTotal;
+  }
+  lsSave(list);
+  renderList();
+  updateStats(list);
+}
+
+function updateStats(list) {
+  document.getElementById('st-count').textContent = list.length;
+  const critical = list.filter(i => i.result?.rating === 'critical').length;
+  document.getElementById('st-critical').textContent = critical;
+}
+
+function renderList() {
+  const list = lsLoad();
+  const body = document.getElementById('watchlist-body');
+  if (!list.length) { body.innerHTML = '<div class="empty-state">No contracts added yet.</div>'; return; }
+  body.innerHTML = list.map((item,i) => {
+    const r = item.result;
+    let badge = '', score = '', time = '';
+    if (r) {
+      const cls = r.rating ? `rating-${r.rating}` : 'rating-no_source';
+      badge = `<span class="rating ${cls}">${r.rating ?? '—'}</span>`;
+      score = `<span class="score">Risk: ${r.risk_score ?? '—'}</span>`;
+      time = `<span class="last-check">${item.lastCheck ? new Date(item.lastCheck).toLocaleTimeString('en-US',{timeZone:'UTC'}) : '—'}</span>`;
+    } else if (item.status === 'loading') {
+      badge = '<span class="loading">analyzing…</span>';
+    }
+    const addrShort = item.addr.slice(0,10) + '…' + item.addr.slice(-6);
+    return `<div class="watch-row">
+      <span class="addr">${addrShort}</span>
+      ${badge}${score}${time}
+      <button class="btn-del" onclick="remove(${i})">✕</button>
+      <button onclick="showDetail(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px">details</button>
+    </div>`;
+  }).join('');
+  updateStats(list);
+}
+
+function add(addr) {
+  addr = addr.trim();
+  if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { alert('Invalid Base address (0x + 40 hex chars)'); return; }
+  const list = lsLoad();
+  if (list.find(x => x.addr.toLowerCase() === addr.toLowerCase())) { alert('Already in watchlist'); return; }
+  list.push({ addr, status: 'loading', result: null, lastCheck: null });
+  lsSave(list);
+  document.getElementById('addr-input').value = '';
+  renderList();
+  // trigger immediate refresh for this item
+  refreshAll();
+}
+
+function remove(idx) {
+  const list = lsLoad();
+  list.splice(idx, 1);
+  lsSave(list);
+  renderList();
+  document.getElementById('detail').classList.remove('show');
+}
+
+function showDetail(idx) {
+  const list = lsLoad();
+  const item = list[idx];
+  if (!item || !item.result) return;
+  const r = item.result;
+  document.getElementById('detail-title').textContent = `${item.addr} — Security Report`;
+  const h = r.severity_counts || {};
+  document.getElementById('detail-body').innerHTML = `
+    <p style="margin-bottom:12px;font-size:13px;color:var(--muted)"><strong>Intent:</strong> ONCHAIN_TX_LOOKUP · <strong>Tool:</strong> ${r.tool ?? 'slither'} · <strong>Latency:</strong> ${r.latency_ms ?? '—'}ms · <strong>Checked:</strong> ${new Date(r._ts||Date.now()).toLocaleString()}</p>
+    <div class="severity-grid">
+      <div class="sev-box high"><div class="num">${h.high??0}</div><div class="lbl">HIGH</div></div>
+      <div class="sev-box medium"><div class="num">${h.medium??0}</div><div class="lbl">MEDIUM</div></div>
+      <div class="sev-box low"><div class="num">${h.low??0}</div><div class="lbl">LOW</div></div>
+      <div class="sev-box info"><div class="num">${h.informational??0}</div><div class="lbl">INFO</div></div>
+    </div>
+    <p style="font-size:13px;margin-bottom:12px"><strong>Summary:</strong> ${r.summary ?? '—'}</p>
+    <p style="font-size:13px;margin-bottom:12px"><strong>Findings:</strong></p>
+    <div class="findings">
+      ${(r.findings||[]).map(f => {
+        const tagCls = f.severity==='high'?'H':f.severity==='medium'?'M':f.severity==='low'?'L':'I';
+        return `<div class="finding"><span class="tag ${tagCls}">${(f.severity||'?').toUpperCase()}</span><span style="font-weight:500">${f.title||''}</span>${f.description?`<div style="color:var(--muted);margin-top:4px">${f.description}</div>`:''}</div>`;
+      }).join('')}
+    </div>
+  `;
+  document.getElementById('detail').classList.add('show');
+}
+
+document.getElementById('add-btn').addEventListener('click', () => add(document.getElementById('addr-input').value));
+document.getElementById('addr-input').addEventListener('keydown', e => { if (e.key==='Enter') add(e.target.value); });
+
+// init
+renderList();
+refreshAll();
+setInterval(refreshAll, 60000); // auto-refresh every 60s
+</script>
+</body>
+</html>

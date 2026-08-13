@@ -1,0 +1,45 @@
+---
+name: vulnfeed-canonical-eval
+version: "1.0.0"
+miners:
+  - id: 10001
+    name: VulnFeed On-Chain Security Intelligence
+    base_url: https://carly17.my.id/vulnfeed
+intent: ONCHAIN_TX_LOOKUP
+description: >
+  Canonical evaluation script for VulnFeed smart-contract security miner.
+  Scores accuracy against ground truth of known Base mainnet contracts.
+ground_truth:
+  - address: 0x2626664c2603336E57B271c5C0b26F421741e481
+    contract: Uniswap SwapRouter02 (Base)
+    expected_rating: critical
+    expected_high: 3
+    known_bug: complex router with unchecked transfers and delegatecall loops
+  - address: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+    contract: USDC (Base Centre proxy)
+    expected_rating: clean
+    expected_high: 0
+    known_bug: none detected — standard ERC20 with upgradeable proxy
+  - address: 0x4200000000000000000000000000000000000006
+    contract: WETH (Base)
+    expected_rating: clean
+    expected_high: 0
+    known_bug: none detected — standard wrapped ether contract
+metrics:
+  rating_accuracy: exact match of predicted vs expected rating
+  high_f1: F1 score for high-severity detection (critical=yes, else no)
+  rating_distance: mean absolute ordinal distance (clean=0, moderate=1, elevated=2, critical=3)
+  determinism: fraction of identical outputs across repeated runs
+  latency_p50_s: median response time
+scoring:
+  rating_accuracy: weight 0.3
+  high_f1: weight 0.3
+  rating_distance: weight 0.2
+  determinism: weight 0.1
+  latency_p50_s: weight 0.1 (inverted — lower is better)
+guardrails:
+  min_samples: 3
+  min_requests_served: 100
+  require_canonical_intents: true
+  canonical_intent_check: ONCHAIN_TX_LOOKUP
+---

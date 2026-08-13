@@ -1,0 +1,14 @@
+Just shipped VulnFeed — a deterministic smart-contract security Miner for @Telegraphprotoc.
+
+LIVE on the network right now (Base, intent ONCHAIN_TX_LOOKUP):
+• verified source resolution (Sourcify + Blockscout)
+• Slither static analysis
+• risk score, rating, exploit probability, severity counts
+• deterministic Track 2 eval harness
+
+Tested on real Base contracts (SwapRouter02 → critical, USDC/WETH → clean). First miner in its intent.
+
+Try it: https://carly17.my.id/vulnfeed/v1/analyze
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base #BuildInPublic
