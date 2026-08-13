@@ -1,0 +1,33 @@
+{
+  "miner": "http://127.0.0.1:8185",
+  "n_cases": 3,
+  "rating_accuracy": 1.0,
+  "rating_distance": 0.0,
+  "high_f1": 1.0,
+  "determinism": 1.0,
+  "latency_p50_s": 0.599,
+  "latency_p95_s": 0.599,
+  "rows": [
+    {
+      "address": "0x2626664c2603336E57B271c5C0b26F421741e481",
+      "expected_rating": "critical",
+      "predicted_rating": "critical",
+      "latency_s": 8.541,
+      "deterministic": true
+    },
+    {
+      "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+      "expected_rating": "clean",
+      "predicted_rating": "clean",
+      "latency_s": 0.599,
+      "deterministic": true
+    },
+    {
+      "address": "0x4200000000000000000000000000000000000006",
+      "expected_rating": "clean",
+      "predicted_rating": "clean",
+      "latency_s": 0.417,
+      "deterministic": true
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+---
+name: vulnfeed-canon-eval
+version: "1.0.0"
+miner_id: 10001
+intent: ONCHAIN_TX_LOOKUP
+description: >
+  Canonical evaluation script for VulnFeed.
+  Scores against ground truth of known Base contracts.
+ground_truth_path: eval/ground_truth.jsonl
+metrics:
+  rating_accuracy: weight 0.3
+  high_f1: weight 0.3
+  rating_distance: weight 0.2
+  determinism: weight 0.1
+  latency_p50_s: weight 0.1
+min_samples: 3
+canonical_intent_check: true
+---
