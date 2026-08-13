@@ -1,0 +1,15 @@
+Building VulnFeed for @Telegraphprotoc Hackathon
+
+A deterministic smart-contract security Miner for ONCHAIN_TX_LOOKUP:
+
+• verified source resolution via Sourcify + Blockscout
+• Slither static analysis
+• risk score, severity counts, exploit probability
+• deterministic Track 2 evaluation harness
+• Base contracts tested: SwapRouter02, USDC, WETH
+
+Initial evaluation: 100% rating accuracy, 100% high-severity F1, 100% deterministic.
+
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base
