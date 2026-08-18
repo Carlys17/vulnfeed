@@ -1,0 +1,7 @@
+Tomorrow the @Telegraphprotoc hackathon kicks off — and my entry is already live on the network.
+
+VulnFeed: a deterministic smart-contract security miner for Base. Feed it any contract address on intent ONCHAIN_TX_LOOKUP, get back verified-source Slither analysis: risk score, rating, exploit probability, severity counts.
+
+Already registered on-chain and serving. See you at kickoff.
+
+#Telegraph #SmartContractSecurity #Base

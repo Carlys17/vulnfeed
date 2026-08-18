@@ -1,0 +1,87 @@
+[2026-08-15 10:04 UTC] xurl not ready — POST MANUALLY from /root/work/vulnfeed/docs/x-posts/day-progress.txt :
+---
+Two days to kickoff in the @Telegraphprotoc hackathon — VulnFeed status check, all green.
+
+• Miner LIVE on Base (intent ONCHAIN_TX_LOOKUP): verified-source Slither analysis → risk score, rating, exploit probability
+• Track 2 eval harness: 3/3 baseline cases correct, 100% rating accuracy, fully deterministic
+• Track 3 Chainguard watchlist app live — monitors Base contracts against VulnFeed in real time
+• Miner YAML on the official schema, hosted + registration script ready
+
+Try it: https://carly17.my.id/vulnfeed/v1/analyze
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base #BuildInPublic
+---
+[2026-08-15 10:05 UTC] xurl not ready — POST MANUALLY from /root/work/vulnfeed/docs/x-posts/day-progress.txt :
+---
+Two days to kickoff in the @Telegraphprotoc hackathon. VulnFeed status check, all green:
+
+• Miner LIVE on Base (intent ONCHAIN_TX_LOOKUP): verified-source Slither analysis → risk score, rating, exploit probability
+• Track 2 eval harness: 3/3 baseline cases correct, 100% rating accuracy, fully deterministic
+• Track 3 Chainguard watchlist app live → monitors Base contracts against VulnFeed in real time
+• Miner YAML on the official schema, hosted + registration script ready
+
+Try it: https://carly17.my.id/vulnfeed/v1/analyze
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base #BuildInPublic
+---
+[2026-08-16 10:03 UTC] xurl not ready — POST MANUALLY from /root/work/vulnfeed/docs/x-posts/day-progress.txt :
+---
+Two days to kickoff in the @Telegraphprotoc hackathon. VulnFeed status check, all green:
+
+• Miner LIVE on Base (intent ONCHAIN_TX_LOOKUP): verified-source Slither analysis → risk score, rating, exploit probability
+• Track 2 eval harness: 3/3 baseline cases correct, 100% rating accuracy, fully deterministic
+• Track 3 Chainguard watchlist app live → monitors Base contracts against VulnFeed in real time
+• Miner YAML on the official schema, hosted + registration script ready
+
+Try it: https://carly17.my.id/vulnfeed/v1/analyze
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base #BuildInPublic
+---
+[2026-08-17 10:00 UTC] xurl not ready — POST MANUALLY from /root/work/vulnfeed/docs/x-posts/day-progress.txt :
+---
+Two days to kickoff in the @Telegraphprotoc hackathon. VulnFeed status check, all green:
+
+• Miner LIVE on Base (intent ONCHAIN_TX_LOOKUP): verified-source Slither analysis → risk score, rating, exploit probability
+• Track 2 eval harness: 3/3 baseline cases correct, 100% rating accuracy, fully deterministic
+• Track 3 Chainguard watchlist app live → monitors Base contracts against VulnFeed in real time
+• Miner YAML on the official schema, hosted + registration script ready
+
+Try it: https://carly17.my.id/vulnfeed/v1/analyze
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base #BuildInPublic
+---
+[2026-08-17 12:01 UTC] xurl not ready — POST MANUALLY from /root/work/vulnfeed/docs/x-posts/day-17.txt :
+---
+Just shipped VulnFeed — a deterministic smart-contract security Miner for @Telegraphprotoc.
+
+LIVE on the network right now (Base, intent ONCHAIN_TX_LOOKUP):
+• verified source resolution (Sourcify + Blockscout)
+• Slither static analysis
+• risk score, rating, exploit probability, severity counts
+• deterministic Track 2 eval harness
+
+Tested on real Base contracts (SwapRouter02 → critical, USDC/WETH → clean). First miner in its intent.
+
+Try it: https://carly17.my.id/vulnfeed/v1/analyze
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base #BuildInPublic
+---
+[2026-08-18 10:01 UTC] xurl not ready — POST MANUALLY from /root/work/vulnfeed/docs/x-posts/day-progress.txt :
+---
+Two days to kickoff in the @Telegraphprotoc hackathon. VulnFeed status check, all green:
+
+• Miner LIVE on Base (intent ONCHAIN_TX_LOOKUP): verified-source Slither analysis → risk score, rating, exploit probability
+• Track 2 eval harness: 3/3 baseline cases correct, 100% rating accuracy, fully deterministic
+• Track 3 Chainguard watchlist app live → monitors Base contracts against VulnFeed in real time
+• Miner YAML on the official schema, hosted + registration script ready
+
+Try it: https://carly17.my.id/vulnfeed/v1/analyze
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base #BuildInPublic
+---

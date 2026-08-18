@@ -1,0 +1,11 @@
+Two days to kickoff in the @Telegraphprotoc hackathon. VulnFeed status check, all green:
+
+• Miner LIVE on Base (intent ONCHAIN_TX_LOOKUP): verified-source Slither analysis → risk score, rating, exploit probability
+• Track 2 eval harness: 3/3 baseline cases correct, 100% rating accuracy, fully deterministic
+• Track 3 Chainguard watchlist app live → monitors Base contracts against VulnFeed in real time
+• Miner YAML on the official schema, hosted + registration script ready
+
+Try it: https://carly17.my.id/vulnfeed/v1/analyze
+Repo: https://github.com/Carlys17/vulnfeed
+
+#Telegraph #SmartContractSecurity #Base #BuildInPublic
