@@ -25,7 +25,10 @@ app = FastAPI(
 
 
 class Query(BaseModel):
-    address: str = Field(..., description="EVM contract address (0x...)")
+    # Telegraph's availability probe sends an empty POST before routing a real
+    # request. Keep that probe HTTP-200 reachable while returning a transparent
+    # machine-readable instruction. Real routed requests still require address.
+    address: str | None = Field(None, description="EVM contract address (0x...)")
     chain_id: int | None = Field(None, description="optional chain id override")
     rpc_url: str | None = Field(None, description="optional RPC override")
 
@@ -59,6 +62,23 @@ def intents() -> list[dict]:
 
 @app.post("/v1/analyze")
 def analyze(q: Query) -> dict:
+    # Telegraph validates keyless endpoints with an empty POST. Respond 200 so
+    # it can verify reachability; no analysis is claimed without an address.
+    if not q.address:
+        return {
+            "intent": config.INTENT,
+            "address": None,
+            "risk_score": 0.0,
+            "rating": "input_required",
+            "exploit_probability": 0.0,
+            "severity_counts": {"high": 0, "medium": 0, "low": 0, "informational": 0},
+            "summary": "Provide a Base EVM contract address in the address field to run analysis.",
+            "findings": [],
+            "tool": "vulnfeed",
+            "warnings": ["address is required for contract analysis"],
+            "error": "missing_address",
+        }
+
     t0 = time.monotonic()
     try:
         addr = normalize_address(q.address)
