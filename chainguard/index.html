@@ -5,123 +5,137 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ChainGuard — Smart Contract Security Monitor</title>
 <meta name="description" content="Real-time smart-contract security monitoring for Base, powered by the VulnFeed miner on Telegraph Protocol.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0b0e14; --surface: #131722; --surface-2: #1b2130; --border: #262d3d;
-  --text: #e6edf3; --muted: #8b97a8; --faint: #5b6575;
-  --accent: #4f8cff; --accent-dim: rgba(79,140,255,0.12);
-  --green: #3fb950; --yellow: #d29922; --orange: #db6d28; --red: #f85149; --gray: #6e7681;
-  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.25);
-  --radius: 10px;
+  /* Linear luminance-stacked dark surfaces */
+  --bg: #08090a; --panel: #0f1011; --surface: #191a1b; --surface-2: #28282c;
+  /* text tiers */
+  --text: #f7f8f8; --text-2: #d0d6e0; --text-3: #8a8f98; --text-4: #62666d;
+  /* single chromatic accent */
+  --accent: #5e6ad2; --accent-2: #7170ff; --accent-hover: #828fff;
+  /* semi-transparent white borders */
+  --border: rgba(255,255,255,0.08); --border-subtle: rgba(255,255,255,0.05);
+  /* status */
+  --green: #27a644; --emerald: #10b981; --yellow: #d29922; --orange: #db6d28; --red: #f85149; --gray: #62666d;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { -webkit-text-size-adjust: 100%; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  background: radial-gradient(1200px 600px at 50% -200px, #131a2b 0%, var(--bg) 60%) fixed;
-  color: var(--text); line-height: 1.55; -webkit-font-smoothing: antialiased;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  background: var(--bg); color: var(--text); line-height: 1.5;
+  -webkit-font-smoothing: antialiased; letter-spacing: -0.011em;
 }
-.container { max-width: 920px; margin: 0 auto; padding: 32px 20px 64px; }
+code, .mono { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace; font-feature-settings: normal; }
+.container { max-width: 1040px; margin: 0 auto; padding: 40px 24px 80px; }
 
 /* Header */
-header { margin-bottom: 28px; }
-.brand { display: flex; align-items: center; gap: 12px; }
-.logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), #7b5cff); display: grid; place-items: center; box-shadow: var(--shadow); flex-shrink: 0; }
-.logo svg { width: 20px; height: 20px; }
-.brand h1 { font-size: 21px; font-weight: 650; letter-spacing: -0.01em; }
+header { margin-bottom: 36px; }
+.brand { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.logo { width: 32px; height: 32px; border-radius: 8px; background: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
+.logo svg { width: 18px; height: 18px; }
+.brand h1 { font-size: 20px; font-weight: 590; letter-spacing: -0.24px; }
 .brand .pills { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
-.pill { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted); background: var(--surface); white-space: nowrap; }
-.pill .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 5px; vertical-align: middle; animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
-header p.tagline { color: var(--muted); margin-top: 10px; font-size: 14px; }
-header p.tagline a { color: var(--accent); text-decoration: none; }
-header p.tagline a:hover { text-decoration: underline; }
+.pill { font-size: 12px; font-weight: 510; padding: 2px 10px 2px 8px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.1); color: var(--text-2); background: transparent; white-space: nowrap; }
+.pill .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); margin-right: 6px; vertical-align: middle; animation: pulse 2.4s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+header .tagline { color: var(--text-3); margin-top: 14px; font-size: 15px; line-height: 1.6; letter-spacing: -0.165px; max-width: 640px; }
+header .tagline a { color: var(--accent-2); text-decoration: none; }
+header .tagline a:hover { color: var(--accent-hover); }
 
 /* Search */
-.search-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 24px 0; box-shadow: var(--shadow); }
-.search-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+.search-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin: 28px 0; }
+.search-card h2 { font-size: 14px; font-weight: 590; margin-bottom: 14px; letter-spacing: -0.182px; }
 .input-row { display: flex; gap: 10px; }
-.input-row input { flex: 1; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; transition: border-color .15s, box-shadow .15s; }
-.input-row input::placeholder { font-family: -apple-system, sans-serif; color: var(--faint); }
-.input-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
-.input-row button { padding: 11px 22px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; font-size: 14px; font-weight: 600; transition: transform .1s, background .15s; }
-.input-row button:hover { background: #3d7bf0; }
-.input-row button:active { transform: translateY(1px); }
-.samples { margin-top: 12px; font-size: 12px; color: var(--faint); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.samples button { background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: color .15s, border-color .15s; }
-.samples button:hover { color: var(--text); border-color: var(--accent); }
+.input-row input { flex: 1; padding: 11px 14px; border-radius: 6px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); color: var(--text); font-size: 15px; font-family: 'JetBrains Mono', ui-monospace, monospace; transition: border-color .15s, box-shadow .15s; }
+.input-row input::placeholder { font-family: 'Inter', sans-serif; color: var(--text-4); }
+.input-row input:focus { outline: none; border-color: var(--accent-2); box-shadow: rgba(0,0,0,0.1) 0px 4px 12px; }
+.btn-primary { padding: 11px 20px; border-radius: 6px; border: none; background: var(--accent); color: #fff; cursor: pointer; font-size: 14px; font-weight: 510; font-family: inherit; transition: background .15s; white-space: nowrap; }
+.btn-primary:hover { background: var(--accent-hover); }
+.samples { margin-top: 14px; font-size: 13px; color: var(--text-4); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.samples span { letter-spacing: -0.13px; }
+.samples button { background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); color: var(--text-2); font-size: 12px; font-weight: 510; font-family: inherit; padding: 3px 10px; border-radius: 9999px; cursor: pointer; transition: color .15s, border-color .15s, background .15s; }
+.samples button:hover { color: var(--text); border-color: rgba(255,255,255,0.14); background: rgba(255,255,255,0.05); }
 
 /* Stats */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
-.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
-.stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
-.stat-card .value { font-size: 26px; font-weight: 680; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.stat-card .sub { font-size: 11px; color: var(--faint); margin-top: 2px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px; }
+.stat-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+.stat-card .label { font-size: 12px; color: var(--text-3); letter-spacing: -0.13px; margin-bottom: 8px; }
+.stat-card .value { font-size: 28px; font-weight: 510; letter-spacing: -0.7px; font-variant-numeric: tabular-nums; line-height: 1; }
+.stat-card .sub { font-size: 12px; color: var(--text-4); margin-top: 6px; letter-spacing: -0.13px; }
+
+/* Section title */
+.section-title { font-size: 14px; font-weight: 590; margin-bottom: 12px; letter-spacing: -0.182px; display: flex; align-items: center; gap: 8px; }
+.section-title .count { font-size: 13px; color: var(--text-4); font-weight: 400; }
 
 /* Watchlist */
-.section-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-.section-title .count { font-size: 12px; color: var(--faint); font-weight: 400; }
-.watch-row { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 13px 16px; margin-bottom: 8px; transition: border-color .15s; }
-.watch-row:hover { border-color: #33405a; }
-.watch-row .addr { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rating { font-weight: 600; font-size: 12px; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
-.rating-clean { background: rgba(63,185,80,0.15); color: var(--green); }
-.rating-moderate { background: rgba(210,153,34,0.15); color: var(--yellow); }
-.rating-elevated { background: rgba(219,109,40,0.15); color: var(--orange); }
-.rating-critical { background: rgba(248,81,73,0.15); color: var(--red); }
-.rating-no_source, .rating-input_required, .rating-unknown { background: rgba(110,118,129,0.15); color: var(--gray); }
-.watch-row .score { font-size: 13px; font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.watch-row .last-check { font-size: 11px; color: var(--faint); white-space: nowrap; }
+.watch-row { display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 13px 16px; margin-bottom: 8px; transition: background .15s, border-color .15s; }
+.watch-row:hover { background: rgba(255,255,255,0.04); border-color: var(--border); }
+.watch-row .addr { font-size: 13px; color: var(--text-2); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rating { font-weight: 510; font-size: 12px; padding: 2px 10px; border-radius: 9999px; white-space: nowrap; border: 1px solid transparent; }
+.rating-clean { background: rgba(39,166,68,0.14); color: var(--green); }
+.rating-moderate { background: rgba(210,153,34,0.14); color: var(--yellow); }
+.rating-elevated { background: rgba(219,109,40,0.14); color: var(--orange); }
+.rating-critical { background: rgba(248,81,73,0.14); color: var(--red); }
+.rating-no_source, .rating-input_required, .rating-unknown { background: rgba(255,255,255,0.05); color: var(--text-3); }
+.watch-row .score { font-size: 13px; font-weight: 510; color: var(--text-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.watch-row .last-check { font-size: 12px; color: var(--text-4); white-space: nowrap; }
 .watch-row .actions { display: flex; gap: 4px; }
-.icon-btn { background: none; border: 1px solid transparent; color: var(--faint); cursor: pointer; font-size: 12px; padding: 4px 8px; border-radius: 6px; transition: color .15s, background .15s; }
-.icon-btn:hover { color: var(--text); background: var(--surface-2); }
+.icon-btn { background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); color: var(--text-3); cursor: pointer; font-size: 12px; font-weight: 510; font-family: inherit; padding: 4px 10px; border-radius: 6px; transition: color .15s, background .15s; }
+.icon-btn:hover { color: var(--text); background: rgba(255,255,255,0.05); }
 .icon-btn.danger:hover { color: var(--red); }
-.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+.icon-btn:disabled { opacity: .35; cursor: default; }
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent-2); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.analyzing { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+.analyzing { font-size: 12px; color: var(--text-3); display: inline-flex; align-items: center; gap: 8px; letter-spacing: -0.13px; }
 
 /* Detail */
-.detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-top: 20px; box-shadow: var(--shadow); display: none; }
+.detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-top: 20px; box-shadow: rgba(0,0,0,0.4) 0px 2px 4px; display: none; }
 .detail-card.show { display: block; animation: fade .2s ease; }
 @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
-.detail-head h2 { font-size: 15px; font-weight: 600; }
-.detail-close { background: none; border: none; color: var(--faint); font-size: 18px; cursor: pointer; line-height: 1; }
+.detail-head h2 { font-size: 16px; font-weight: 590; letter-spacing: -0.24px; }
+.detail-close { background: none; border: none; color: var(--text-4); font-size: 18px; cursor: pointer; line-height: 1; }
 .detail-close:hover { color: var(--text); }
-.detail-meta { font-size: 12px; color: var(--faint); margin-bottom: 16px; }
-.detail-meta code { color: var(--muted); font-family: ui-monospace, monospace; }
+.detail-meta { font-size: 13px; color: var(--text-4); margin-bottom: 18px; line-height: 1.7; letter-spacing: -0.13px; }
+.detail-meta code { color: var(--text-3); font-size: 12px; }
+.detail-meta strong { color: var(--text-2); font-weight: 510; }
 .severity-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
-.sev-box { text-align: center; padding: 12px; border-radius: 8px; background: var(--surface-2); }
-.sev-box .num { font-size: 22px; font-weight: 680; font-variant-numeric: tabular-nums; }
+.sev-box { text-align: center; padding: 14px; border-radius: 8px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); }
+.sev-box .num { font-size: 24px; font-weight: 510; font-variant-numeric: tabular-nums; letter-spacing: -0.5px; }
 .sev-box.high .num { color: var(--red); } .sev-box.medium .num { color: var(--yellow); }
-.sev-box.low .num { color: var(--green); } .sev-box.info .num { color: var(--muted); }
-.sev-box .lbl { font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
-.summary-box { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px; }
-.summary-box strong { color: var(--muted); font-weight: 600; }
-.findings-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
-.findings { max-height: 340px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
-.finding { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.sev-box.low .num { color: var(--green); } .sev-box.info .num { color: var(--text-3); }
+.sev-box .lbl { font-size: 11px; color: var(--text-4); margin-top: 6px; letter-spacing: -0.13px; }
+.summary-box { background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 12px 14px; font-size: 14px; margin-bottom: 18px; color: var(--text-2); line-height: 1.6; letter-spacing: -0.165px; }
+.summary-box strong { color: var(--text-3); font-weight: 510; }
+.findings-title { font-size: 13px; font-weight: 590; margin-bottom: 10px; letter-spacing: -0.13px; }
+.findings { max-height: 360px; overflow-y: auto; border: 1px solid var(--border-subtle); border-radius: 8px; }
+.finding { padding: 12px 14px; border-bottom: 1px solid var(--border-subtle); font-size: 14px; }
 .finding:last-child { border-bottom: none; }
-.finding .tag { display: inline-block; padding: 1px 7px; border-radius: 5px; font-size: 10px; font-weight: 700; margin-right: 8px; letter-spacing: .03em; }
-.finding .tag.H { background: rgba(248,81,73,0.2); color: var(--red); }
-.finding .tag.M { background: rgba(210,153,34,0.2); color: var(--yellow); }
-.finding .tag.L { background: rgba(63,185,80,0.2); color: var(--green); }
-.finding .tag.I { background: rgba(139,148,158,0.2); color: var(--muted); }
-.finding .desc { color: var(--muted); margin-top: 5px; font-size: 12px; }
-.finding .loc { color: var(--faint); font-family: ui-monospace, monospace; font-size: 11px; margin-top: 4px; }
+.finding .tag { display: inline-block; padding: 1px 7px; border-radius: 5px; font-size: 10px; font-weight: 510; margin-right: 8px; }
+.finding .tag.H { background: rgba(248,81,73,0.18); color: var(--red); }
+.finding .tag.M { background: rgba(210,153,34,0.18); color: var(--yellow); }
+.finding .tag.L { background: rgba(39,166,68,0.18); color: var(--green); }
+.finding .tag.I { background: rgba(255,255,255,0.06); color: var(--text-3); }
+.finding .title { font-weight: 510; }
+.finding .desc { color: var(--text-3); margin-top: 5px; font-size: 13px; line-height: 1.55; letter-spacing: -0.13px; }
+.finding .loc { color: var(--text-4); font-size: 11px; margin-top: 4px; }
 
-/* Empty / states */
-.empty-state { text-align: center; padding: 44px 20px; color: var(--faint); background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); font-size: 14px; }
-.empty-state svg { width: 34px; height: 34px; opacity: .4; margin-bottom: 12px; }
+/* Empty */
+.empty-state { text-align: center; padding: 48px 20px; color: var(--text-4); background: rgba(255,255,255,0.02); border: 1px solid var(--border-subtle); border-radius: 12px; font-size: 14px; letter-spacing: -0.165px; }
+.empty-state svg { width: 32px; height: 32px; opacity: .35; margin-bottom: 12px; }
 
-footer { border-top: 1px solid var(--border); margin-top: 40px; padding-top: 18px; color: var(--faint); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-footer a { color: var(--accent); text-decoration: none; }
-footer a:hover { text-decoration: underline; }
+footer { border-top: 1px solid var(--border-subtle); margin-top: 44px; padding-top: 20px; color: var(--text-4); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; letter-spacing: -0.13px; }
+footer a { color: var(--accent-2); text-decoration: none; }
+footer a:hover { color: var(--accent-hover); }
 
 @media (max-width: 600px) {
   .severity-grid { grid-template-columns: repeat(2,1fr); }
   .watch-row { flex-wrap: wrap; }
-  .brand .pills { width: 100%; margin: 8px 0 0; }
+  .brand .pills { width: 100%; margin: 6px 0 0; }
 }
 </style>
 </head>
@@ -138,17 +152,17 @@ footer a:hover { text-decoration: underline; }
         <span class="pill">Telegraph · ONCHAIN_TX_LOOKUP</span>
       </div>
     </div>
-    <p class="tagline">Real-time smart-contract security monitoring on <strong>Base mainnet</strong>, powered by the <a href="https://github.com/Carlys17/vulnfeed" target="_blank" rel="noopener">VulnFeed</a> miner on Telegraph Protocol. Add any contract to your watchlist and it is re-analyzed automatically.</p>
+    <p class="tagline">Real-time smart-contract security monitoring on Base mainnet, powered by the <a href="https://github.com/Carlys17/vulnfeed" target="_blank" rel="noopener">VulnFeed</a> miner on Telegraph Protocol. Add any contract to your watchlist and it is re-analyzed automatically.</p>
   </header>
 
   <div class="search-card">
     <h2>Add a contract to your watchlist</h2>
     <div class="input-row">
       <input id="addr-input" placeholder="Base contract address (0x…)" aria-label="Contract address" spellcheck="false" autocomplete="off" />
-      <button id="add-btn">Analyze</button>
+      <button class="btn-primary" id="add-btn">Analyze</button>
     </div>
     <div class="samples">
-      <span>Examples:</span>
+      <span>Examples</span>
       <button onclick="fill('0x2626664c2603336E57B271c5C0b26F421741e481')">SwapRouter02</button>
       <button onclick="fill('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913')">USDC</button>
       <button onclick="fill('0x4200000000000000000000000000000000000006')">WETH</button>
@@ -157,9 +171,9 @@ footer a:hover { text-decoration: underline; }
 
   <div class="stats">
     <div class="stat-card"><div class="label">Contracts watched</div><div class="value" id="st-count">0</div><div class="sub">on your watchlist</div></div>
-    <div class="stat-card"><div class="label">Critical alerts</div><div class="value" id="st-critical">0</div><div class="sub">need review</div></div>
+    <div class="stat-card"><div class="label">Alerts</div><div class="value" id="st-critical">0</div><div class="sub">elevated or critical</div></div>
     <div class="stat-card"><div class="label">Requests served</div><div class="value" id="st-reqs">0</div><div class="sub">via VulnFeed miner</div></div>
-    <div class="stat-card"><div class="label">Last check</div><div class="value" id="st-time" style="font-size:15px;font-weight:600">—</div><div class="sub">UTC</div></div>
+    <div class="stat-card"><div class="label">Last check</div><div class="value" id="st-time" style="font-size:16px;letter-spacing:-0.24px">—</div><div class="sub">UTC</div></div>
   </div>
 
   <div class="watcher-list">
@@ -200,6 +214,7 @@ function lsSave(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
 function bumpReqs() { requestsTotal += 1; localStorage.setItem(LS_REQS, String(requestsTotal)); document.getElementById('st-reqs').textContent = requestsTotal.toLocaleString(); }
 function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function short(a) { return a.slice(0, 10) + '…' + a.slice(-6); }
+function utcTime() { return new Date().toLocaleTimeString('en-GB', { timeZone:'UTC', hour:'2-digit', minute:'2-digit' }); }
 
 async function analyze(addr) {
   const t0 = performance.now();
@@ -216,7 +231,7 @@ async function analyze(addr) {
 async function refreshAll() {
   const list = lsLoad();
   if (!list.length) return;
-  document.getElementById('st-time').textContent = new Date().toLocaleTimeString('en-GB', { timeZone:'UTC', hour:'2-digit', minute:'2-digit' });
+  document.getElementById('st-time').textContent = utcTime();
   for (const item of list) {
     item.status = 'loading';
     renderList();
@@ -234,8 +249,8 @@ async function refreshAll() {
 function updateStats(list) {
   document.getElementById('st-count').textContent = list.length;
   document.getElementById('wl-count').textContent = list.length ? `(${list.length})` : '';
-  const critical = list.filter(i => i.result?.rating === 'critical' || i.result?.rating === 'elevated').length;
-  document.getElementById('st-critical').textContent = critical;
+  const alerts = list.filter(i => i.result?.rating === 'critical' || i.result?.rating === 'elevated').length;
+  document.getElementById('st-critical').textContent = alerts;
 }
 
 function renderList() {
@@ -260,10 +275,10 @@ function renderList() {
              <span class="last-check">${t} UTC</span>`;
     }
     return `<div class="watch-row">
-      <span class="addr" title="${esc(item.addr)}">${short(item.addr)}</span>
+      <span class="addr mono" title="${esc(item.addr)}">${short(item.addr)}</span>
       ${mid}
       <span class="actions">
-        <button class="icon-btn" onclick="showDetail(${i})" ${r && !r.error ? '' : 'disabled style=opacity:.4'}>Details</button>
+        <button class="icon-btn" onclick="showDetail(${i})" ${r && !r.error ? '' : 'disabled'}>Details</button>
         <button class="icon-btn danger" onclick="remove(${i})" aria-label="Remove">Remove</button>
       </span>
     </div>`;
@@ -297,12 +312,11 @@ function showDetail(idx) {
   if (!item || !item.result || item.result.error) return;
   const r = item.result;
   const h = r.severity_counts || {};
-  document.getElementById('detail-title').textContent = 'Security Report';
   const ep = r.exploit_probability != null ? (r.exploit_probability * 100).toFixed(0) + '%' : '—';
   document.getElementById('detail-body').innerHTML = `
     <div class="detail-meta">
       <code>${esc(item.addr)}</code><br>
-      Intent <strong>ONCHAIN_TX_LOOKUP</strong> · Tool ${esc(r.tool ?? 'slither')} · Exploit probability ${ep} · Latency ${r.latency_ms ?? r._latency ?? '—'}ms · Checked ${new Date(r._ts || Date.now()).toLocaleString('en-GB', { timeZone:'UTC' })} UTC
+      Intent <strong>ONCHAIN_TX_LOOKUP</strong> · Tool <strong>${esc(r.tool ?? 'slither')}</strong> · Exploit probability <strong>${ep}</strong> · Latency <strong>${r.latency_ms ?? r._latency ?? '—'}ms</strong> · Checked ${new Date(r._ts || Date.now()).toLocaleString('en-GB', { timeZone:'UTC' })} UTC
     </div>
     <div class="severity-grid">
       <div class="sev-box high"><div class="num">${h.high ?? 0}</div><div class="lbl">High</div></div>
@@ -316,9 +330,9 @@ function showDetail(idx) {
       ${(r.findings || []).length ? (r.findings || []).map(f => {
         const sev = (f.impact || f.severity || '').toLowerCase();
         const tagCls = sev === 'high' ? 'H' : sev === 'medium' ? 'M' : sev === 'low' ? 'L' : 'I';
-        const loc = f.file ? `<div class="loc">${esc(f.file)}${f.line_start ? ':' + f.line_start : ''}</div>` : '';
-        return `<div class="finding"><span class="tag ${tagCls}">${esc((sev || 'info').toUpperCase())}</span><span style="font-weight:500">${esc(f.title || 'Finding')}</span>${f.description ? `<div class="desc">${esc(f.description)}</div>` : ''}${loc}</div>`;
-      }).join('') : '<div class="finding" style="color:var(--faint)">No issues reported.</div>'}
+        const loc = f.file ? `<div class="loc mono">${esc(f.file)}${f.line_start ? ':' + f.line_start : ''}</div>` : '';
+        return `<div class="finding"><span class="tag ${tagCls}">${esc((sev || 'info').toUpperCase())}</span><span class="title">${esc(f.title || 'Finding')}</span>${f.description ? `<div class="desc">${esc(f.description)}</div>` : ''}${loc}</div>`;
+      }).join('') : '<div class="finding" style="color:var(--text-4)">No issues reported.</div>'}
     </div>`;
   const card = document.getElementById('detail');
   card.classList.add('show');
@@ -341,7 +355,6 @@ function flash(msg) {
 document.getElementById('add-btn').addEventListener('click', () => add(document.getElementById('addr-input').value));
 document.getElementById('addr-input').addEventListener('keydown', e => { if (e.key === 'Enter') add(e.target.value); });
 
-// init
 document.getElementById('st-reqs').textContent = requestsTotal.toLocaleString();
 renderList();
 refreshAll();
