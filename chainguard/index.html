@@ -3,197 +3,283 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChainGuard — Real-time Smart Contract Security Monitor</title>
+<title>ChainGuard — Smart Contract Security Monitor</title>
+<meta name="description" content="Real-time smart-contract security monitoring for Base, powered by the VulnFeed miner on Telegraph Protocol.">
 <style>
 :root {
-  --bg: #0d1117; --surface: #161b22; --border: #30363d;
-  --text: #e6edf3; --muted: #8b949e;
-  --green: #2ea043; --yellow: #d29922; --orange: #db6d28; --red: #f85149; --gray: #6e7681;
+  --bg: #0b0e14; --surface: #131722; --surface-2: #1b2130; --border: #262d3d;
+  --text: #e6edf3; --muted: #8b97a8; --faint: #5b6575;
+  --accent: #4f8cff; --accent-dim: rgba(79,140,255,0.12);
+  --green: #3fb950; --yellow: #d29922; --orange: #db6d28; --red: #f85149; --gray: #6e7681;
+  --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.25);
+  --radius: 10px;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.5; }
-.container { max-width: 960px; margin: 0 auto; padding: 24px 16px; }
-header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; }
-header h1 { font-size: 22px; display: flex; align-items: center; gap: 10px; }
-header h1 .badge { font-size: 11px; background: var(--border); padding: 2px 8px; border-radius: 12px; color: var(--muted); }
-header p { color: var(--muted); margin-top: 4px; font-size: 14px; }
-.badge-tg { color: var(--green); }
-.search-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; }
-.search-card h2 { font-size: 16px; margin-bottom: 12px; }
-.input-row { display: flex; gap: 8px; }
-.input-row input { flex: 1; padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
-.input-row input:focus { outline: none; border-color: var(--green); }
-.input-row button { padding: 8px 16px; border-radius: 6px; border: none; background: var(--green); color: white; cursor: pointer; font-size: 14px; font-weight: 500; }
-.input-row button:hover { opacity: 0.9; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
-.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-.stat-card .label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-.stat-card .value { font-size: 22px; font-weight: 600; }
-.stat-card .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
-.watcher-list { margin-bottom: 24px; }
-.watcher-list h2 { font-size: 16px; margin-bottom: 12px; }
-.watch-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 12px 16px; margin-bottom: 8px; }
-.watch-row .addr { font-family: monospace; font-size: 13px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.watch-row .rating { font-weight: 600; font-size: 13px; padding: 2px 8px; border-radius: 12px; }
-.rating-clean { background: rgba(46,160,67,0.15); color: var(--green); }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(1200px 600px at 50% -200px, #131a2b 0%, var(--bg) 60%) fixed;
+  color: var(--text); line-height: 1.55; -webkit-font-smoothing: antialiased;
+}
+.container { max-width: 920px; margin: 0 auto; padding: 32px 20px 64px; }
+
+/* Header */
+header { margin-bottom: 28px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo { width: 34px; height: 34px; border-radius: 9px; background: linear-gradient(135deg, var(--accent), #7b5cff); display: grid; place-items: center; box-shadow: var(--shadow); flex-shrink: 0; }
+.logo svg { width: 20px; height: 20px; }
+.brand h1 { font-size: 21px; font-weight: 650; letter-spacing: -0.01em; }
+.brand .pills { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+.pill { font-size: 11px; font-weight: 500; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--border); color: var(--muted); background: var(--surface); white-space: nowrap; }
+.pill .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--green); margin-right: 5px; vertical-align: middle; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+header p.tagline { color: var(--muted); margin-top: 10px; font-size: 14px; }
+header p.tagline a { color: var(--accent); text-decoration: none; }
+header p.tagline a:hover { text-decoration: underline; }
+
+/* Search */
+.search-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin: 24px 0; box-shadow: var(--shadow); }
+.search-card h2 { font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text); }
+.input-row { display: flex; gap: 10px; }
+.input-row input { flex: 1; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; transition: border-color .15s, box-shadow .15s; }
+.input-row input::placeholder { font-family: -apple-system, sans-serif; color: var(--faint); }
+.input-row input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+.input-row button { padding: 11px 22px; border-radius: 8px; border: none; background: var(--accent); color: #fff; cursor: pointer; font-size: 14px; font-weight: 600; transition: transform .1s, background .15s; }
+.input-row button:hover { background: #3d7bf0; }
+.input-row button:active { transform: translateY(1px); }
+.samples { margin-top: 12px; font-size: 12px; color: var(--faint); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.samples button { background: var(--surface-2); border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 3px 10px; border-radius: 6px; cursor: pointer; transition: color .15s, border-color .15s; }
+.samples button:hover { color: var(--text); border-color: var(--accent); }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; }
+.stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 6px; }
+.stat-card .value { font-size: 26px; font-weight: 680; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.stat-card .sub { font-size: 11px; color: var(--faint); margin-top: 2px; }
+
+/* Watchlist */
+.section-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.section-title .count { font-size: 12px; color: var(--faint); font-weight: 400; }
+.watch-row { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 13px 16px; margin-bottom: 8px; transition: border-color .15s; }
+.watch-row:hover { border-color: #33405a; }
+.watch-row .addr { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; color: var(--muted); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rating { font-weight: 600; font-size: 12px; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.rating-clean { background: rgba(63,185,80,0.15); color: var(--green); }
 .rating-moderate { background: rgba(210,153,34,0.15); color: var(--yellow); }
 .rating-elevated { background: rgba(219,109,40,0.15); color: var(--orange); }
 .rating-critical { background: rgba(248,81,73,0.15); color: var(--red); }
-.rating-no_source { background: rgba(110,118,129,0.15); color: var(--gray); }
-.watch-row .score { font-size: 14px; font-weight: 500; }
-.watch-row .last-check { font-size: 11px; color: var(--muted); }
-.watch-row .btn-del { background: none; border: none; color: var(--gray); cursor: pointer; font-size: 16px; }
-.watch-row .btn-del:hover { color: var(--red); }
-.detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; margin-bottom: 24px; display: none; }
-.detail-card.show { display: block; }
-.detail-card h2 { font-size: 16px; margin-bottom: 16px; }
-.severity-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 16px; }
-.sev-box { text-align: center; padding: 10px; border-radius: 6px; }
-.sev-box.high { background: rgba(248,81,73,0.15); color: var(--red); }
-.sev-box.medium { background: rgba(210,153,34,0.15); color: var(--yellow); }
-.sev-box.low { background: rgba(46,160,67,0.15); color: var(--green); }
-.sev-box.info { background: rgba(139,148,158,0.15); color: var(--muted); }
-.sev-box .num { font-size: 20px; font-weight: 600; }
-.sev-box .lbl { font-size: 11px; color: var(--muted); }
-.findings { max-height: 300px; overflow-y: auto; }
-.finding { padding: 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+.rating-no_source, .rating-input_required, .rating-unknown { background: rgba(110,118,129,0.15); color: var(--gray); }
+.watch-row .score { font-size: 13px; font-weight: 500; color: var(--text); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.watch-row .last-check { font-size: 11px; color: var(--faint); white-space: nowrap; }
+.watch-row .actions { display: flex; gap: 4px; }
+.icon-btn { background: none; border: 1px solid transparent; color: var(--faint); cursor: pointer; font-size: 12px; padding: 4px 8px; border-radius: 6px; transition: color .15s, background .15s; }
+.icon-btn:hover { color: var(--text); background: var(--surface-2); }
+.icon-btn.danger:hover { color: var(--red); }
+.spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.analyzing { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+
+/* Detail */
+.detail-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-top: 20px; box-shadow: var(--shadow); display: none; }
+.detail-card.show { display: block; animation: fade .2s ease; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.detail-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 6px; }
+.detail-head h2 { font-size: 15px; font-weight: 600; }
+.detail-close { background: none; border: none; color: var(--faint); font-size: 18px; cursor: pointer; line-height: 1; }
+.detail-close:hover { color: var(--text); }
+.detail-meta { font-size: 12px; color: var(--faint); margin-bottom: 16px; }
+.detail-meta code { color: var(--muted); font-family: ui-monospace, monospace; }
+.severity-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
+.sev-box { text-align: center; padding: 12px; border-radius: 8px; background: var(--surface-2); }
+.sev-box .num { font-size: 22px; font-weight: 680; font-variant-numeric: tabular-nums; }
+.sev-box.high .num { color: var(--red); } .sev-box.medium .num { color: var(--yellow); }
+.sev-box.low .num { color: var(--green); } .sev-box.info .num { color: var(--muted); }
+.sev-box .lbl { font-size: 10px; color: var(--faint); text-transform: uppercase; letter-spacing: .05em; margin-top: 4px; }
+.summary-box { background: var(--surface-2); border-radius: 8px; padding: 12px 14px; font-size: 13px; margin-bottom: 18px; }
+.summary-box strong { color: var(--muted); font-weight: 600; }
+.findings-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+.findings { max-height: 340px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+.finding { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
 .finding:last-child { border-bottom: none; }
-.finding .tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 8px; }
+.finding .tag { display: inline-block; padding: 1px 7px; border-radius: 5px; font-size: 10px; font-weight: 700; margin-right: 8px; letter-spacing: .03em; }
 .finding .tag.H { background: rgba(248,81,73,0.2); color: var(--red); }
 .finding .tag.M { background: rgba(210,153,34,0.2); color: var(--yellow); }
-.finding .tag.L { background: rgba(46,160,67,0.2); color: var(--green); }
+.finding .tag.L { background: rgba(63,185,80,0.2); color: var(--green); }
 .finding .tag.I { background: rgba(139,148,158,0.2); color: var(--muted); }
-.empty-state { text-align: center; padding: 40px; color: var(--muted); }
-.loading { color: var(--muted); font-style: italic; }
-footer { border-top: 1px solid var(--border); padding-top: 16px; color: var(--muted); font-size: 12px; }
-footer a { color: var(--green); text-decoration: none; }
-@media(max-width:600px){ .severity-grid{ grid-template-columns: repeat(2,1fr); } }
+.finding .desc { color: var(--muted); margin-top: 5px; font-size: 12px; }
+.finding .loc { color: var(--faint); font-family: ui-monospace, monospace; font-size: 11px; margin-top: 4px; }
+
+/* Empty / states */
+.empty-state { text-align: center; padding: 44px 20px; color: var(--faint); background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius); font-size: 14px; }
+.empty-state svg { width: 34px; height: 34px; opacity: .4; margin-bottom: 12px; }
+
+footer { border-top: 1px solid var(--border); margin-top: 40px; padding-top: 18px; color: var(--faint); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+footer a { color: var(--accent); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+  .severity-grid { grid-template-columns: repeat(2,1fr); }
+  .watch-row { flex-wrap: wrap; }
+  .brand .pills { width: 100%; margin: 8px 0 0; }
+}
 </style>
 </head>
 <body>
 <div class="container">
   <header>
-    <h1>ChainGuard <span class="badge">Telegraph Miner: ONCHAIN_TX_LOOKUP</span></h1>
-    <p>Real-time smart-contract security monitor powered by <a href="https://github.com/Carlys17/vulnfeed" target="_blank" rel="noopener">VulnFeed</a> on Telegraph Protocol · Base mainnet</p>
+    <div class="brand">
+      <span class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/></svg>
+      </span>
+      <h1>ChainGuard</h1>
+      <div class="pills">
+        <span class="pill"><span class="dot"></span>Live</span>
+        <span class="pill">Telegraph · ONCHAIN_TX_LOOKUP</span>
+      </div>
+    </div>
+    <p class="tagline">Real-time smart-contract security monitoring on <strong>Base mainnet</strong>, powered by the <a href="https://github.com/Carlys17/vulnfeed" target="_blank" rel="noopener">VulnFeed</a> miner on Telegraph Protocol. Add any contract to your watchlist and it is re-analyzed automatically.</p>
   </header>
 
   <div class="search-card">
-    <h2>Add contract to watchlist</h2>
+    <h2>Add a contract to your watchlist</h2>
     <div class="input-row">
-      <input id="addr-input" placeholder="Paste Base contract address (0x...)" />
-      <button id="add-btn">Add</button>
+      <input id="addr-input" placeholder="Base contract address (0x…)" aria-label="Contract address" spellcheck="false" autocomplete="off" />
+      <button id="add-btn">Analyze</button>
     </div>
-    <p style="margin-top:10px;font-size:12px;color:var(--muted)">Try: <a href="#" onclick="fill('0x2626664c2603336E57B271c5C0b26F421741e481');return false">SwapRouter02</a> · <a href="#" onclick="fill('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913');return false">USDC</a> · <a href="#" onclick="fill('0x4200000000000000000000000000000000000006');return false">WETH</a></p>
+    <div class="samples">
+      <span>Examples:</span>
+      <button onclick="fill('0x2626664c2603336E57B271c5C0b26F421741e481')">SwapRouter02</button>
+      <button onclick="fill('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913')">USDC</button>
+      <button onclick="fill('0x4200000000000000000000000000000000000006')">WETH</button>
+    </div>
   </div>
 
-  <div class="stats" id="stats">
-    <div class="stat-card"><div class="label">Contracts watched</div><div class="value" id="st-count">0</div><div class="sub">watchlist</div></div>
-    <div class="stat-card"><div class="label">Latest check</div><div class="value" id="st-time">—</div><div class="sub">UTC</div></div>
-    <div class="stat-card"><div class="label">Total requests</div><div class="value" id="st-reqs">0</div><div class="sub">powered by VulnFeed</div></div>
-    <div class="stat-card"><div class="label">Critical alerts</div><div class="value" id="st-critical">0</div><div class="sub">contracts needing review</div></div>
+  <div class="stats">
+    <div class="stat-card"><div class="label">Contracts watched</div><div class="value" id="st-count">0</div><div class="sub">on your watchlist</div></div>
+    <div class="stat-card"><div class="label">Critical alerts</div><div class="value" id="st-critical">0</div><div class="sub">need review</div></div>
+    <div class="stat-card"><div class="label">Requests served</div><div class="value" id="st-reqs">0</div><div class="sub">via VulnFeed miner</div></div>
+    <div class="stat-card"><div class="label">Last check</div><div class="value" id="st-time" style="font-size:15px;font-weight:600">—</div><div class="sub">UTC</div></div>
   </div>
 
-  <div class="watcher-list" id="watchlist">
-    <h2>Watchlist</h2>
+  <div class="watcher-list">
+    <div class="section-title">Watchlist <span class="count" id="wl-count"></span></div>
     <div id="watchlist-body">
-      <div class="empty-state">No contracts added yet. Paste an address above to start monitoring.</div>
+      <div class="empty-state">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/></svg>
+        <div>No contracts yet. Paste a Base address above to start monitoring.</div>
+      </div>
     </div>
   </div>
 
-  <div class="detail-card" id="detail">
-    <h2 id="detail-title">Contract Details</h2>
+  <div class="detail-card" id="detail" role="region" aria-label="Contract security report">
+    <div class="detail-head">
+      <h2 id="detail-title">Security Report</h2>
+      <button class="detail-close" onclick="closeDetail()" aria-label="Close report">✕</button>
+    </div>
     <div id="detail-body"></div>
   </div>
 
   <footer>
-    Built for the <a href="https://hackathon.telegraphprotocol.com" target="_blank" rel="noopener">Telegraph Hackathon</a> · Miner runs on <a href="https://carly17.my.id/vulnfeed/health" target="_blank" rel="noopener">Base</a>
+    <span>Analysis runs on Base mainnet · registered on Telegraph (Base Sepolia)</span>
+    <span>Built for the <a href="https://hackathon.telegraphprotocol.com" target="_blank" rel="noopener">Telegraph Hackathon</a> · <a href="https://carly17.my.id/vulnfeed/health" target="_blank" rel="noopener">Miner status</a></span>
   </footer>
 </div>
 
 <script>
 const API = 'https://carly17.my.id/vulnfeed/v1/analyze';
-const LS_KEY = 'chainguard_wl';
-let requestsTotal = 0;
+const LS_KEY = 'chainguard_wl_v2';
+const LS_REQS = 'chainguard_reqs';
+const REFRESH_MS = 60000;
 
-function fill(addr) { document.getElementById('addr-input').value = addr; }
+let requestsTotal = parseInt(localStorage.getItem(LS_REQS) || '0', 10) || 0;
+
+function fill(addr) { const el = document.getElementById('addr-input'); el.value = addr; el.focus(); }
 function lsLoad() { try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch { return []; } }
 function lsSave(arr) { localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+function bumpReqs() { requestsTotal += 1; localStorage.setItem(LS_REQS, String(requestsTotal)); document.getElementById('st-reqs').textContent = requestsTotal.toLocaleString(); }
+function esc(s) { return String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function short(a) { return a.slice(0, 10) + '…' + a.slice(-6); }
 
 async function analyze(addr) {
   const t0 = performance.now();
   try {
-    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({address: addr}) });
+    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ address: addr }) });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const d = await r.json();
     d._latency = Math.round(performance.now() - t0);
     d._ts = new Date().toISOString();
     return d;
-  } catch(e) { return { error: e.message }; }
+  } catch (e) { return { error: e.message }; }
 }
 
 async function refreshAll() {
   const list = lsLoad();
   if (!list.length) return;
-  const now = new Date().toISOString();
-  document.getElementById('st-time').textContent = new Date().toLocaleString('en-US',{timeZone:'UTC'});
+  document.getElementById('st-time').textContent = new Date().toLocaleTimeString('en-GB', { timeZone:'UTC', hour:'2-digit', minute:'2-digit' });
   for (const item of list) {
-    if (item.status === 'loading') continue;
     item.status = 'loading';
     renderList();
     const r = await analyze(item.addr);
     item.status = 'done';
     item.result = r;
-    item.lastCheck = now;
-    if (r && r.risk_score !== undefined) requestsTotal += 1;
-    document.getElementById('st-reqs').textContent = requestsTotal;
+    item.lastCheck = new Date().toISOString();
+    if (r && r.risk_score !== undefined && !r.error) bumpReqs();
+    lsSave(list);
+    renderList();
   }
-  lsSave(list);
-  renderList();
   updateStats(list);
 }
 
 function updateStats(list) {
   document.getElementById('st-count').textContent = list.length;
-  const critical = list.filter(i => i.result?.rating === 'critical').length;
+  document.getElementById('wl-count').textContent = list.length ? `(${list.length})` : '';
+  const critical = list.filter(i => i.result?.rating === 'critical' || i.result?.rating === 'elevated').length;
   document.getElementById('st-critical').textContent = critical;
 }
 
 function renderList() {
   const list = lsLoad();
   const body = document.getElementById('watchlist-body');
-  if (!list.length) { body.innerHTML = '<div class="empty-state">No contracts added yet.</div>'; return; }
-  body.innerHTML = list.map((item,i) => {
+  if (!list.length) {
+    body.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l8 4v6c0 5-3.5 8-8 10-4.5-2-8-5-8-10V6l8-4z"/></svg><div>No contracts yet. Paste a Base address above to start monitoring.</div></div>`;
+    updateStats(list); return;
+  }
+  body.innerHTML = list.map((item, i) => {
     const r = item.result;
-    let badge = '', score = '', time = '';
-    if (r) {
-      const cls = r.rating ? `rating-${r.rating}` : 'rating-no_source';
-      badge = `<span class="rating ${cls}">${r.rating ?? '—'}</span>`;
-      score = `<span class="score">Risk: ${r.risk_score ?? '—'}</span>`;
-      time = `<span class="last-check">${item.lastCheck ? new Date(item.lastCheck).toLocaleTimeString('en-US',{timeZone:'UTC'}) : '—'}</span>`;
-    } else if (item.status === 'loading') {
-      badge = '<span class="loading">analyzing…</span>';
+    let mid = '';
+    if (item.status === 'loading' && !r) {
+      mid = `<span class="analyzing"><span class="spinner"></span>analyzing…</span>`;
+    } else if (r && r.error) {
+      mid = `<span class="rating rating-unknown">error</span><span class="last-check">${esc(r.error)}</span>`;
+    } else if (r) {
+      const cls = r.rating ? `rating-${r.rating}` : 'rating-unknown';
+      const t = item.lastCheck ? new Date(item.lastCheck).toLocaleTimeString('en-GB', { timeZone:'UTC', hour:'2-digit', minute:'2-digit' }) : '—';
+      mid = `<span class="rating ${cls}">${esc(r.rating ?? '—')}</span>
+             <span class="score">Risk ${r.risk_score ?? '—'}</span>
+             <span class="last-check">${t} UTC</span>`;
     }
-    const addrShort = item.addr.slice(0,10) + '…' + item.addr.slice(-6);
     return `<div class="watch-row">
-      <span class="addr">${addrShort}</span>
-      ${badge}${score}${time}
-      <button class="btn-del" onclick="remove(${i})">✕</button>
-      <button onclick="showDetail(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px">details</button>
+      <span class="addr" title="${esc(item.addr)}">${short(item.addr)}</span>
+      ${mid}
+      <span class="actions">
+        <button class="icon-btn" onclick="showDetail(${i})" ${r && !r.error ? '' : 'disabled style=opacity:.4'}>Details</button>
+        <button class="icon-btn danger" onclick="remove(${i})" aria-label="Remove">Remove</button>
+      </span>
     </div>`;
   }).join('');
   updateStats(list);
 }
 
 function add(addr) {
-  addr = addr.trim();
-  if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { alert('Invalid Base address (0x + 40 hex chars)'); return; }
+  addr = (addr || '').trim();
+  if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) { flash('Enter a valid Base address (0x + 40 hex characters)'); return; }
   const list = lsLoad();
-  if (list.find(x => x.addr.toLowerCase() === addr.toLowerCase())) { alert('Already in watchlist'); return; }
+  if (list.find(x => x.addr.toLowerCase() === addr.toLowerCase())) { flash('Already on your watchlist'); return; }
   list.push({ addr, status: 'loading', result: null, lastCheck: null });
   lsSave(list);
   document.getElementById('addr-input').value = '';
   renderList();
-  // trigger immediate refresh for this item
   refreshAll();
 }
 
@@ -202,44 +288,64 @@ function remove(idx) {
   list.splice(idx, 1);
   lsSave(list);
   renderList();
-  document.getElementById('detail').classList.remove('show');
+  closeDetail();
 }
 
 function showDetail(idx) {
   const list = lsLoad();
   const item = list[idx];
-  if (!item || !item.result) return;
+  if (!item || !item.result || item.result.error) return;
   const r = item.result;
-  document.getElementById('detail-title').textContent = `${item.addr} — Security Report`;
   const h = r.severity_counts || {};
+  document.getElementById('detail-title').textContent = 'Security Report';
+  const ep = r.exploit_probability != null ? (r.exploit_probability * 100).toFixed(0) + '%' : '—';
   document.getElementById('detail-body').innerHTML = `
-    <p style="margin-bottom:12px;font-size:13px;color:var(--muted)"><strong>Intent:</strong> ONCHAIN_TX_LOOKUP · <strong>Tool:</strong> ${r.tool ?? 'slither'} · <strong>Latency:</strong> ${r.latency_ms ?? '—'}ms · <strong>Checked:</strong> ${new Date(r._ts||Date.now()).toLocaleString()}</p>
+    <div class="detail-meta">
+      <code>${esc(item.addr)}</code><br>
+      Intent <strong>ONCHAIN_TX_LOOKUP</strong> · Tool ${esc(r.tool ?? 'slither')} · Exploit probability ${ep} · Latency ${r.latency_ms ?? r._latency ?? '—'}ms · Checked ${new Date(r._ts || Date.now()).toLocaleString('en-GB', { timeZone:'UTC' })} UTC
+    </div>
     <div class="severity-grid">
-      <div class="sev-box high"><div class="num">${h.high??0}</div><div class="lbl">HIGH</div></div>
-      <div class="sev-box medium"><div class="num">${h.medium??0}</div><div class="lbl">MEDIUM</div></div>
-      <div class="sev-box low"><div class="num">${h.low??0}</div><div class="lbl">LOW</div></div>
-      <div class="sev-box info"><div class="num">${h.informational??0}</div><div class="lbl">INFO</div></div>
+      <div class="sev-box high"><div class="num">${h.high ?? 0}</div><div class="lbl">High</div></div>
+      <div class="sev-box medium"><div class="num">${h.medium ?? 0}</div><div class="lbl">Medium</div></div>
+      <div class="sev-box low"><div class="num">${h.low ?? 0}</div><div class="lbl">Low</div></div>
+      <div class="sev-box info"><div class="num">${h.informational ?? 0}</div><div class="lbl">Info</div></div>
     </div>
-    <p style="font-size:13px;margin-bottom:12px"><strong>Summary:</strong> ${r.summary ?? '—'}</p>
-    <p style="font-size:13px;margin-bottom:12px"><strong>Findings:</strong></p>
+    <div class="summary-box"><strong>Summary:</strong> ${esc(r.summary ?? '—')}</div>
+    <div class="findings-title">Findings (${(r.findings || []).length})</div>
     <div class="findings">
-      ${(r.findings||[]).map(f => {
+      ${(r.findings || []).length ? (r.findings || []).map(f => {
         const sev = (f.impact || f.severity || '').toLowerCase();
-        const tagCls = sev==='high'?'H':sev==='medium'?'M':sev==='low'?'L':'I';
-        return `<div class="finding"><span class="tag ${tagCls}">${(sev||'?').toUpperCase()}</span><span style="font-weight:500">${f.title||''}</span>${f.description?`<div style="color:var(--muted);margin-top:4px">${f.description}</div>`:''}</div>`;
-      }).join('')}
-    </div>
-  `;
-  document.getElementById('detail').classList.add('show');
+        const tagCls = sev === 'high' ? 'H' : sev === 'medium' ? 'M' : sev === 'low' ? 'L' : 'I';
+        const loc = f.file ? `<div class="loc">${esc(f.file)}${f.line_start ? ':' + f.line_start : ''}</div>` : '';
+        return `<div class="finding"><span class="tag ${tagCls}">${esc((sev || 'info').toUpperCase())}</span><span style="font-weight:500">${esc(f.title || 'Finding')}</span>${f.description ? `<div class="desc">${esc(f.description)}</div>` : ''}${loc}</div>`;
+      }).join('') : '<div class="finding" style="color:var(--faint)">No issues reported.</div>'}
+    </div>`;
+  const card = document.getElementById('detail');
+  card.classList.add('show');
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeDetail() { document.getElementById('detail').classList.remove('show'); }
+
+let flashTimer;
+function flash(msg) {
+  const el = document.getElementById('addr-input');
+  const orig = el.placeholder;
+  el.value = '';
+  el.placeholder = msg;
+  el.style.borderColor = 'var(--red)';
+  clearTimeout(flashTimer);
+  flashTimer = setTimeout(() => { el.placeholder = orig; el.style.borderColor = ''; }, 2600);
 }
 
 document.getElementById('add-btn').addEventListener('click', () => add(document.getElementById('addr-input').value));
-document.getElementById('addr-input').addEventListener('keydown', e => { if (e.key==='Enter') add(e.target.value); });
+document.getElementById('addr-input').addEventListener('keydown', e => { if (e.key === 'Enter') add(e.target.value); });
 
 // init
+document.getElementById('st-reqs').textContent = requestsTotal.toLocaleString();
 renderList();
 refreshAll();
-setInterval(refreshAll, 60000); // auto-refresh every 60s
+setInterval(refreshAll, REFRESH_MS);
 </script>
 </body>
 </html>
