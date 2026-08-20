@@ -224,8 +224,9 @@ function showDetail(idx) {
     <p style="font-size:13px;margin-bottom:12px"><strong>Findings:</strong></p>
     <div class="findings">
       ${(r.findings||[]).map(f => {
-        const tagCls = f.severity==='high'?'H':f.severity==='medium'?'M':f.severity==='low'?'L':'I';
-        return `<div class="finding"><span class="tag ${tagCls}">${(f.severity||'?').toUpperCase()}</span><span style="font-weight:500">${f.title||''}</span>${f.description?`<div style="color:var(--muted);margin-top:4px">${f.description}</div>`:''}</div>`;
+        const sev = (f.impact || f.severity || '').toLowerCase();
+        const tagCls = sev==='high'?'H':sev==='medium'?'M':sev==='low'?'L':'I';
+        return `<div class="finding"><span class="tag ${tagCls}">${(sev||'?').toUpperCase()}</span><span style="font-weight:500">${f.title||''}</span>${f.description?`<div style="color:var(--muted);margin-top:4px">${f.description}</div>`:''}</div>`;
       }).join('')}
     </div>
   `;
