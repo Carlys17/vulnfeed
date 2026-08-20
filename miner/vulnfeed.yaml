@@ -5,10 +5,10 @@ slug: vulnfeed-onchain-security
 protocol: generic
 name: VulnFeed On-Chain Security Intelligence
 description: >
-  Deterministic smart-contract security miner for Base. Given an EVM contract
-  address, fetches verified source from Sourcify or Blockscout and returns a
-  structured Slither risk report with ratings, severity counts, exploit
-  probability, and per-finding details.
+  Deterministic smart-contract security miner for Base. Given a deployed EVM
+  contract address, fetches verified source from Sourcify or Blockscout and
+  returns a structured Slither risk report with ratings, severity counts,
+  exploit probability, and per-finding details.
 base_url: https://carly17.my.id/vulnfeed
 
 docs:
@@ -28,25 +28,6 @@ endpoints:
     external_path: /v1/analyze
     method: POST
     description: Analyze a Base EVM contract address for smart-contract vulnerabilities.
-    intents: [ONCHAIN_TX_LOOKUP]
-    params:
-      body:
-        required:
-          - name: address
-            type: string
-            intents: [ONCHAIN_TX_LOOKUP]
-            description: EVM contract address on Base (0x-prefixed, 40 hex characters).
-            example: "0x0000000000000000000000000000000000000000"
-        optional:
-          - name: chain_id
-            type: integer
-            intents: [ONCHAIN_TX_LOOKUP]
-            description: EVM chain ID. Defaults to Base mainnet 8453.
-            default: 8453
-          - name: rpc_url
-            type: string
-            intents: [ONCHAIN_TX_LOOKUP]
-            description: Optional HTTPS JSON-RPC endpoint override.
 
 input_schema:
   type: object
@@ -86,7 +67,6 @@ semantics:
     - ONCHAIN_TX_LOOKUP
 
 on_chain:
-  description: Risk score and exploit probability for a Base contract.
   transform: direct
   min_price_usdc: 0.01
   fields:
@@ -120,4 +100,3 @@ limitations:
 
 # YAML is public. No API keys or private credentials belong in this file.
 # Hosted copy: https://carly17.my.id/vulnfeed/vulnfeed.yaml
-# SHA-256 is computed from the exact hosted bytes before registration.
