@@ -1,71 +1,63 @@
-# VulnFeed — On-Chain Security Intelligence Miner (Telegraph)
+# VulnFeed
 
-Deterministic smart-contract security miner for the **Telegraph Protocol Hackathon**.
-Serves the **ONCHAIN_TX_LOOKUP** intent (Tier A · deterministic) — "Smart contract auditing agents".
+Deterministic EVM smart-contract security miner. Given a contract address on
+Base, VulnFeed fetches verified source (Sourcify → Blockscout) and runs static
+analysis (Slither) to produce a structured, reproducible risk report.
 
-Given an EVM contract address, VulnFeed fetches verified source (Sourcify → Blockscout)
-and runs static analysis (Slither) to return a structured risk report:
+Built for the `ONCHAIN_TX_LOOKUP` intent in the Telegraph Protocol miner network.
 
-- `rating`: clean / moderate / elevated / critical
-- `risk_score`: 0–100 composite
-- `exploit_probability`: 0–1
-- `severity_counts`: high / medium / low / informational
-- `findings`: per-detector detail (title, impact, confidence, file, line)
-- deterministic & repeatable for the same input
+## What it does
 
-## Intent
+`POST /v1/analyze` with an EVM contract address returns a fixed-schema report:
 
-| Intent | Tier | Type | Deterministic |
-|---|---|---|---|
-| `ONCHAIN_TX_LOOKUP` | A | On-Chain Analytics | ✅ |
+| Field | Type | Description |
+|---|---|---|
+| `rating` | string | `clean` · `moderate` · `elevated` · `critical` · `no_source` |
+| `risk_score` | number | 0–100 composite score |
+| `exploit_probability` | number | 0–1 likelihood of a working exploit |
+| `severity_counts` | object | high / medium / low / informational detector hits |
+| `findings` | array | per-detector detail: title, impact, confidence, file, line |
+| `summary` | string | human-readable explanation |
+
+Output is **deterministic** — the same input always yields the same report
+(stable detector ordering, stable scoring, no sampling or randomness).
 
 ## Architecture
 
 ```
-                  /v1/analyze
- Client ─────────────────────────────► FastAPI (uvicorn :8185)
-                                   │
-                  resolve.fetch_sources()   (Sourcify v2 → Blockscout → fallback)
-                                   ▼
-                                   core.audit_source()   (Slither static analysis)
-                                   │
-                                   ▼
-                       structured risk report (JSON)
+Client
+  │  POST /v1/analyze  { address }
+  ▼
+FastAPI  (uvicorn :8185)
+  │
+  ├─ resolve.fetch_sources()      Sourcify v2 → Blockscout → bytecode fallback
+  ▼
+core.audit_source()               Slither static analysis + risk synthesis
+  ▼
+structured risk report (JSON)
 ```
 
-## Project structure
+| Component | Responsibility |
+|---|---|
+| `app/server.py` | FastAPI surface: `/health`, `/intents`, `/v1/analyze` |
+| `app/core.py` | Slither audit + composite risk-score synthesis |
+| `app/resolve.py` | Verified-source resolver (Sourcify / Blockscout) |
+| `app/validation.py` | Address + RPC normalization |
+| `app/config.py` | Environment config + intent declaration |
+| `miner/vulnfeed.yaml` | Telegraph miner integration manifest |
+| `eval/score_miner.py` | Evaluation harness (determinism, accuracy, latency) |
+| `fixtures/VulnerableVault.sol` | Sample contract for testing |
 
-```
-app/
-  server.py      # FastAPI surface (health, intents, /v1/analyze)
-  core.py        # Slither audit + risk synthesis
-  resolve.py     # Sourcify/Blockscout verified-source resolver
-  validation.py  # address + RPC normalization
-  config.py      # env config + intent declaration
-miner/
-  vulnfeed.yaml  # Telegraph miner YAML integration manifest
-eval/
-  score_miner.py # Track 2 evaluation harness (determinism, accuracy, latency)
-  ground_truth.jsonl
-fixtures/
-  VulnerableVault.sol
-tests/
-  test_core.py
-deploy/
-  systemd service + nginx notes
-```
-
-## Run locally
+## Quick start
 
 ```bash
-# create venv + install
-python3 -m venv .venv-tg
-.venv-tg/bin/pip install -r requirements.txt
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
 
-# start API
-.venv-tg/bin/python -m uvicorn app.server:app --host 127.0.0.1 --port 8185
+# start the API (loopback only)
+.venv/bin/python -m uvicorn app.server:app --host 127.0.0.1 --port 8185
 
-# health
+# health check
 curl http://127.0.0.1:8185/health
 
 # analyze a contract on Base
@@ -74,43 +66,35 @@ curl -s -X POST http://127.0.0.1:8185/v1/analyze \
   -d '{"address":"0x2626664c2603336E57B271c5C0b26F421741e481"}'
 ```
 
-## Track 2: evaluation harness
+## Evaluation
+
+`eval/score_miner.py` measures the miner against a ground-truth set
+(`eval/ground_truth.jsonl`) and emits a machine-readable JSON report:
 
 ```bash
-.venv-tg/bin/python eval/score_miner.py --truth eval/ground_truth.jsonl \
-  --base-url http://127.0.0.1:8185 --out report.json
+.venv/bin/python eval/score_miner.py \
+  --truth eval/ground_truth.jsonl \
+  --base-url http://127.0.0.1:8185 \
+  --out report.json
 ```
 
-Metrics emitted: `rating_accuracy`, `rating_distance`, `high_f1`, `determinism`,
-`latency_p50_s`, `latency_p95_s`.
+Metrics: `rating_accuracy`, `rating_distance` (ordinal 0–3), `high_f1`,
+`determinism`, `latency_p50_s`, `latency_p95_s`.
 
 ## Deployment
 
-- API: uvicorn on 127.0.0.1:8185
-- Public proxy: `https://carly17.my.id/vulnfeed/` (nginx → 127.0.0.1:8185)
-- Miner manifest: `https://carly17.my.id/collectors/vulnfeed.yaml`
-
-## Miner YAML (Telegraph)
-
-See `miner/vulnfeed.yaml`. Declares:
-- intent `ONCHAIN_TX_LOOKUP`
-- `label_field` = `rating`, `confidence_field` = `exploit_probability`
-- `on_chain: transform direct, min_price_usdc 0.01`
+- API: `uvicorn` bound to `127.0.0.1:8185`
+- Reverse proxy (nginx) → `https://carly17.my.id/vulnfeed/`
+- Miner manifest served at `/vulnfeed.yaml` and `https://carly17.my.id/vulnfeed/vulnfeed.yaml`
+- systemd unit: `deploy/vulnfeed.service`
+- Container build: `Dockerfile`
 
 ## Security
 
-- API binds loopback only (127.0.0.1), exposed via authenticated reverse proxy
-- No API keys stored on-chain; `auth: none` for the public resolver path
-- Deterministic output, rate limiting at proxy
+- API binds loopback only; exposed through an authenticated reverse proxy.
+- No API keys are stored on-chain; the public resolver path uses `auth: none`.
+- Deterministic output with per-IP rate limiting at the proxy.
 
-## Judgment notes
+## License
 
-- Track 1 Miners: 75% Normalized Performance (within intent) + 25% X engagement
-- Guardrail: ≥3 active miners + ≥100 real requests per intent for cash prizes
-- Tag `@Telegraphprotoc` in all update posts
-
-## Links
-
-- Hackathon: https://hackathon.telegraphprotocol.com/
-- Docs: https://docs.telegraphprotocol.com/
-- Boilerplate: https://github.com/telegraphprotocol/telegraph-usecases
+MIT
