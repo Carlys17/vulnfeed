@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VulnFeed — Smart Contract Security Intelligence</title>
+<style>
+  :root {
+    --bg: #0a0e14; --panel: #11161f; --border: #1e2733;
+    --text: #e6edf3; --muted: #8b98a9; --accent: #4f9cf9;
+    --green: #3fb950; --yellow: #d29922; --red: #f85149;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+    min-height: 100vh; padding: 2rem 1rem;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 2rem; }
+  h1 { font-size: 1.8rem; letter-spacing: -0.5px; }
+  h1 span { color: var(--accent); }
+  .tagline { color: var(--muted); margin-top: 0.5rem; font-size: 0.9rem; }
+  .badges { margin-top: 0.8rem; display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap; }
+  .badge {
+    font-size: 0.7rem; padding: 0.25rem 0.6rem; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--muted); background: var(--panel);
+  }
+  .panel {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;
+  }
+  label { display: block; color: var(--muted); font-size: 0.8rem; margin-bottom: 0.5rem; }
+  .row { display: flex; gap: 0.6rem; }
+  input[type=text] {
+    flex: 1; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); padding: 0.75rem 1rem; border-radius: 8px;
+    font-family: inherit; font-size: 0.9rem; outline: none;
+  }
+  input[type=text]:focus { border-color: var(--accent); }
+  button {
+    background: var(--accent); color: #fff; border: none;
+    padding: 0.75rem 1.5rem; border-radius: 8px; font-family: inherit;
+    font-size: 0.9rem; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  button:hover { filter: brightness(1.1); }
+  button:disabled { opacity: 0.5; cursor: wait; }
+  .examples { margin-top: 0.8rem; font-size: 0.75rem; color: var(--muted); }
+  .examples a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+  #status { margin-top: 1rem; font-size: 0.85rem; color: var(--muted); min-height: 1.2em; }
+  .result { display: none; }
+  .result.show { display: block; }
+  .score-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.8rem; margin-bottom: 1.2rem; }
+  .score-card { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.9rem; text-align: center; }
+  .score-card .val { font-size: 1.4rem; font-weight: 700; }
+  .score-card .lbl { font-size: 0.7rem; color: var(--muted); margin-top: 0.3rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rating-clean { color: var(--green); } .rating-warn { color: var(--yellow); } .rating-danger { color: var(--red); } .rating-neutral { color: var(--muted); }
+  .summary { background: var(--bg); border-left: 3px solid var(--accent); padding: 0.8rem 1rem; border-radius: 0 8px 8px 0; font-size: 0.85rem; margin-bottom: 1.2rem; line-height: 1.5; }
+  .finding { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 0.6rem; font-size: 0.8rem; }
+  .finding .sev { display: inline-block; padding: 0.1rem 0.5rem; border-radius: 4px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-right: 0.5rem; }
+  .sev-High { background: rgba(248,81,73,0.15); color: var(--red); }
+  .sev-Medium { background: rgba(210,153,34,0.15); color: var(--yellow); }
+  .sev-Low { background: rgba(79,156,249,0.15); color: var(--accent); }
+  .sev-Informational { background: rgba(139,152,169,0.15); color: var(--muted); }
+  .finding .check { color: var(--text); font-weight: 600; }
+  .finding .desc { color: var(--muted); margin-top: 0.3rem; line-height: 1.4; }
+  .meta { font-size: 0.7rem; color: var(--muted); margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+  footer { text-align: center; color: var(--muted); font-size: 0.7rem; margin-top: 2rem; line-height: 1.8; }
+  footer a { color: var(--accent); text-decoration: none; }
+  code { background: var(--bg); padding: 0.1rem 0.4rem; border-radius: 4px; font-size: 0.75rem; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Vuln<span>Feed</span></h1>
+    <p class="tagline">Smart contract security intelligence for Base. Slither-powered analysis via Telegraph Protocol.</p>
+    <div class="badges">
+      <span class="badge">intent: ONCHAIN_TX_LOOKUP</span>
+      <span class="badge">chain: Base (8453)</span>
+      <span class="badge">engine: Slither</span>
+      <span class="badge">deterministic</span>
+    </div>
+  </header>
+
+  <div class="panel">
+    <label for="addr">Contract address (0x…)</label>
+    <div class="row">
+      <input type="text" id="addr" placeholder="0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" spellcheck="false">
+      <button id="go" onclick="analyze()">Analyze</button>
+    </div>
+    <div class="examples">
+      Try:
+      <a onclick="fill('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913')">USDC</a> ·
+      <a onclick="fill('0x4200000000000000000000000000000000000006')">WETH</a> ·
+      <a onclick="fill('0x940181a94A35A4569E4529A3CDfB74e38FD98631')">AERO</a>
+    </div>
+    <div id="status"></div>
+  </div>
+
+  <div class="panel result" id="result">
+    <div class="score-grid" id="scores"></div>
+    <div class="summary" id="summary"></div>
+    <div id="findings"></div>
+    <div class="meta" id="meta"></div>
+  </div>
+
+  <footer>
+    API: <code>POST https://carly17.my.id/vulnfeed/v1/analyze</code> · body <code>{"address":"0x…"}</code><br>
+    Docs: <a href="/vulnfeed/docs">/vulnfeed/docs</a> · Miner YAML: <a href="/vulnfeed/vulnfeed.yaml">vulnfeed.yaml</a> ·
+    Source: <a href="https://github.com/Carlys17/vulnfeed">github.com/Carlys17/vulnfeed</a><br>
+    Built for the <a href="https://hackathon.telegraphprotocol.com">Telegraph Protocol Hackathon</a> · Season I · Base
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+function fill(a) { $('addr').value = a; analyze(); }
+
+function ratingClass(r) {
+  if (!r) return 'rating-neutral';
+  if (r === 'clean') return 'rating-clean';
+  if (r === 'no_source' || r === 'input_required') return 'rating-neutral';
+  return 'rating-danger';
+}
+
+async function analyze() {
+  const addr = $('addr').value.trim();
+  if (!/^0x[a-fA-F0-9]{40}$/.test(addr)) {
+    $('status').textContent = 'Enter a valid 0x-prefixed 40-hex address.';
+    return;
+  }
+  $('go').disabled = true;
+  $('status').textContent = 'Analyzing… fetching verified source + running Slither (can take a few seconds)';
+  $('result').classList.remove('show');
+  const t0 = performance.now();
+  try {
+    const res = await fetch('/vulnfeed/v1/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address: addr })
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.detail || d.error || ('HTTP ' + res.status));
+
+    const sc = d.severity_counts || {};
+    $('scores').innerHTML = `
+      <div class="score-card"><div class="val ${ratingClass(d.rating)}">${d.rating ?? '—'}</div><div class="lbl">rating</div></div>
+      <div class="score-card"><div class="val">${d.risk_score ?? 0}</div><div class="lbl">risk score</div></div>
+      <div class="score-card"><div class="val">${((d.exploit_probability ?? 0) * 100).toFixed(0)}%</div><div class="lbl">exploit prob</div></div>
+      <div class="score-card"><div class="val rating-danger">${sc.high ?? 0}</div><div class="lbl">high</div></div>
+      <div class="score-card"><div class="val rating-warn">${sc.medium ?? 0}</div><div class="lbl">medium</div></div>
+      <div class="score-card"><div class="val">${sc.low ?? 0}</div><div class="lbl">low</div></div>`;
+    $('summary').textContent = d.summary || 'No summary.';
+
+    const f = d.findings || [];
+    $('findings').innerHTML = f.length
+      ? f.map(x => `<div class="finding">
+          <span class="sev sev-${x.severity || 'Informational'}">${x.severity || 'info'}</span>
+          <span class="check">${x.check || x.id || 'finding'}</span>
+          ${x.description ? `<div class="desc">${x.description}</div>` : ''}
+        </div>`).join('')
+      : '<div class="finding"><span class="sev sev-Informational">none</span><span class="check">No findings returned</span></div>';
+
+    const ms = Math.round(performance.now() - t0);
+    $('meta').innerHTML = `<span>tool: ${d.tool ?? '—'}</span><span>latency: ${d.latency_ms ?? ms} ms</span><span>address: ${d.address ?? addr}</span>`;
+    if (d.warnings && d.warnings.length) $('meta').innerHTML += `<span>warnings: ${d.warnings.join('; ')}</span>`;
+    $('result').classList.add('show');
+    $('status').textContent = '';
+  } catch (e) {
+    $('status').textContent = 'Error: ' + e.message;
+  } finally {
+    $('go').disabled = false;
+  }
+}
+$('addr').addEventListener('keydown', e => { if (e.key === 'Enter') analyze(); });
+</script>
+</body>
+</html>

@@ -44,6 +44,17 @@ def vulnfeed_yaml() -> Response:
         raise HTTPException(status_code=404, detail="miner YAML not found")
 
 
+@app.get("/", include_in_schema=False)
+def index() -> Response:
+    """Public demo UI: analyze any Base contract from the browser."""
+    html_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "index.html")
+    try:
+        with open(html_path, "rb") as fh:
+            return Response(content=fh.read(), media_type="text/html")
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="demo UI not found")
+
+
 @app.get("/health")
 def health() -> dict:
     return {"status": "ok", "intent": config.INTENT, "version": app.version}
