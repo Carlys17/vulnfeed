@@ -60,11 +60,13 @@ def intents() -> list[dict]:
     ]
 
 
+@app.get("/v1/analyze")
 @app.post("/v1/analyze")
-def analyze(q: Query) -> dict:
-    # Telegraph validates keyless endpoints with an empty POST. Respond 200 so
-    # it can verify reachability; no analysis is claimed without an address.
-    if not q.address:
+def analyze(q: Query | None = None) -> dict:
+    # Telegraph sends both GET (routing probe) and POST (real request).
+    # Keep both methods HTTP-200 so the node can verify reachability and
+    # actually route jobs. No analysis is claimed without an address.
+    if q is None or not q.address:
         return {
             "intent": config.INTENT,
             "address": None,
