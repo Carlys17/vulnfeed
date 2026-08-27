@@ -72,12 +72,28 @@ def intents() -> list[dict]:
 
 
 @app.get("/v1/analyze")
+def analyze_get(
+    address: str | None = None,
+    chain_id: int | None = None,
+    rpc_url: str | None = None,
+) -> dict:
+    """GET variant: Telegraph nodes may pass params as query string."""
+    return _run_analysis(address, chain_id, rpc_url)
+
+
 @app.post("/v1/analyze")
 def analyze(q: Query | None = None) -> dict:
+    """POST variant: real routed requests carry a JSON body."""
+    if q is None:
+        return _run_analysis(None, None, None)
+    return _run_analysis(q.address, q.chain_id, q.rpc_url)
+
+
+def _run_analysis(address: str | None, chain_id: int | None, rpc_url: str | None) -> dict:
     # Telegraph sends both GET (routing probe) and POST (real request).
     # Keep both methods HTTP-200 so the node can verify reachability and
     # actually route jobs. No analysis is claimed without an address.
-    if q is None or not q.address:
+    if not address:
         return {
             "intent": config.INTENT,
             "address": None,
@@ -94,8 +110,8 @@ def analyze(q: Query | None = None) -> dict:
 
     t0 = time.monotonic()
     try:
-        addr = normalize_address(q.address)
-        rpc = validate_rpc(q.rpc_url)
+        addr = normalize_address(address)
+        rpc = validate_rpc(rpc_url)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
