@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
@@ -19,9 +21,47 @@ log = logging.getLogger("vulnfeed")
 
 app = FastAPI(
     title="VulnFeed Miner",
-    version="0.1.0",
+    version="0.2.0",
     description="ONCHAIN_TX_LOOKUP smart-contract security intelligence miner.",
 )
+
+# CORS: allow browser builders to call the API cross-origin (demo UI, dApps).
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
+    max_age=600,
+)
+
+# ---------------------------------------------------------------------------
+# Result cache (matches miner YAML cache_ttl_sec: 300)
+# ---------------------------------------------------------------------------
+_CACHE_TTL = 300
+_CACHE_MAX = 256
+_cache: dict[str, tuple[float, dict]] = {}
+_cache_lock = threading.Lock()
+
+
+def _cache_get(key: str) -> dict | None:
+    with _cache_lock:
+        hit = _cache.get(key)
+        if hit is None:
+            return None
+        ts, payload = hit
+        if time.monotonic() - ts > _CACHE_TTL:
+            _cache.pop(key, None)
+            return None
+        return payload
+
+
+def _cache_put(key: str, payload: dict) -> None:
+    with _cache_lock:
+        if len(_cache) >= _CACHE_MAX:
+            # evict oldest
+            oldest = min(_cache, key=lambda k: _cache[k][0])
+            _cache.pop(oldest, None)
+        _cache[key] = (time.monotonic(), payload)
 
 
 class Query(BaseModel):
@@ -115,7 +155,16 @@ def _run_analysis(address: str | None, chain_id: int | None, rpc_url: str | None
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    sources, warn = resolve.fetch_sources(addr, rpc)
+    # Cache key includes address + chain + rpc so distinct targets don't collide.
+    cache_key = f"{addr}:{chain_id or config.CHAIN_ID}:{rpc or 'default'}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        out = dict(cached)
+        out["cached"] = True
+        out["latency_ms"] = round((time.monotonic() - t0) * 1000, 1)
+        return out
+
+    sources, warn = resolve.fetch_sources(addr, rpc, chain_id)
 
     if sources:
         result = core.audit_source(sources)
@@ -129,7 +178,13 @@ def _run_analysis(address: str | None, chain_id: int | None, rpc_url: str | None
 
     result.summary = result.summary or "no analysis"
     payload = _to_payload(result)
+    payload["cached"] = False
     payload["latency_ms"] = round((time.monotonic() - t0) * 1000, 1)
+
+    # Only cache successful, non-error results.
+    if not payload.get("error"):
+        _cache_put(cache_key, payload)
+
     return payload
 
 
@@ -148,6 +203,16 @@ def _heuristic_fallback(addr: str) -> core.EngineResult:
 
 
 def _to_payload(result: core.EngineResult) -> dict[str, Any]:
+    # Sanitize the error field: never leak internal exception details/paths to
+    # callers. Keep a stable machine-readable category instead.
+    err = result.error
+    if err:
+        if "timed out" in err:
+            err = "analysis_timeout"
+        elif "no Solidity/Vyper source" in err:
+            err = "no_source_file"
+        else:
+            err = "analysis_failed"
     return {
         "intent": config.INTENT,
         "address": result.address,
@@ -159,7 +224,7 @@ def _to_payload(result: core.EngineResult) -> dict[str, Any]:
         "findings": result.findings,
         "tool": result.tool,
         "warnings": result.warnings,
-        "error": result.error,
+        "error": err,
     }
 
 

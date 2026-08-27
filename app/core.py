@@ -116,54 +116,119 @@ def _register_all_detectors(sl) -> None:
 # --------------------------------------------------------------------------
 # Slither audit over a source tree
 # --------------------------------------------------------------------------
-def audit_source(source_files: dict[str, str], root_name: str = "Project") -> EngineResult:
-    """Run Slither over an in-memory map of {relative_path: source}."""
-    from slither.slither import Slither  # heavy import, lazy
+def _safe_relpath(rel: str, base: Path) -> Path | None:
+    """Resolve ``rel`` under ``base`` and refuse escapes (path traversal).
 
+    Source maps come from external resolvers (Sourcify/Blockscout), so a
+    malicious or malformed entry like ``../../etc/x`` must never write outside
+    the temp dir. Returns None when the path is unsafe.
+    """
+    # Reject absolute paths and obvious traversal before joining.
+    if rel.startswith(("/", "\\")) or ".." in Path(rel).parts:
+        return None
+    p = (base / rel).resolve()
     try:
+        p.relative_to(base.resolve())
+    except ValueError:
+        return None
+    return p
+
+
+def _slither_worker(source_files: dict[str, str], result_queue) -> None:
+    """Run one Slither audit in an isolated child process.
+
+    Runs in a fresh process so a hung or crashing Slither can be hard-killed by
+    the parent (a stuck in-thread audit would hold ``_audit_lock`` forever and
+    wedge every subsequent request). Puts a picklable dict on ``result_queue``.
+    """
+    try:
+        from slither.slither import Slither  # heavy import, lazy
+
         _patch_natspec()
-        with _audit_lock:
-            with tempfile.TemporaryDirectory(prefix="vulnfeed-") as td:
-                base = Path(td)
-                # Writable sources into a flat dir; Slither handles relative imports.
-                entry = None
-                for rel, code in source_files.items():
-                    p = base / rel
-                    p.parent.mkdir(parents=True, exist_ok=True)
-                    p.write_text(code)
-                    if rel.endswith((".sol", ".vy")):
-                        entry = entry or rel
+        with tempfile.TemporaryDirectory(prefix="vulnfeed-") as td:
+            base = Path(td)
+            entry = None
+            for rel, code in source_files.items():
+                p = _safe_relpath(rel, base)
+                if p is None:
+                    log.warning("skipping unsafe source path: %r", rel)
+                    continue
+                p.parent.mkdir(parents=True, exist_ok=True)
+                p.write_text(code)
+                if rel.endswith((".sol", ".vy")):
+                    entry = entry or rel
 
-                if entry is None:
-                    raise ValueError("no Solidity/Vyper source file to analyze")
+            if entry is None:
+                result_queue.put({"ok": False, "error": "no Solidity/Vyper source file to analyze"})
+                return
 
-                # Build a version->binary map so crytic-compile tries each
-                # installed solc and picks the one that satisfies the pragma.
-                solcs_bin = _solcs_bin_map()
+            solcs_bin = _solcs_bin_map()
 
-                # Solc resolves `@import` paths relative to CWD, so run from
-                # the source root and pass a relative entry file.
-                prev_cwd = os.getcwd()
-                os.chdir(base)
-                try:
-                    sl = Slither(
-                        entry,
-                        solc_args=f"--allow-paths .,{base}",
-                        solc_solcs_bin=solcs_bin,
-                        disable_solc_warnings=True,
-                        filter_paths="",
-                    )
-                    _register_all_detectors(sl)
-                    findings = _findings_from_slither(sl)
-                finally:
-                    os.chdir(prev_cwd)
+            prev_cwd = os.getcwd()
+            os.chdir(base)
+            try:
+                sl = Slither(
+                    entry,
+                    solc_args=f"--allow-paths .,{base}",
+                    solc_solcs_bin=solcs_bin,
+                    disable_solc_warnings=True,
+                    filter_paths="",
+                )
+                _register_all_detectors(sl)
+                findings = _findings_from_slither(sl)
+            finally:
+                os.chdir(prev_cwd)
+        result_queue.put({"ok": True, "findings": findings})
     except Exception as exc:  # noqa: BLE001
-        log.warning("Slither run failed: %s", exc)
+        try:
+            result_queue.put({"ok": False, "error": str(exc)})
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def audit_source(source_files: dict[str, str], root_name: str = "Project") -> EngineResult:
+    """Run Slither over an in-memory map of {relative_path: source}.
+
+    The audit runs in a child process bounded by ``config.SLITHER_TIMEOUT``.
+    ``_audit_lock`` serializes audits so only one heavy Slither process runs at
+    a time (memory safety); the timeout bounds how long the lock can be held.
+    """
+    import multiprocessing as mp
+
+    with _audit_lock:
+        ctx = mp.get_context("spawn")
+        q = ctx.Queue()
+        proc = ctx.Process(target=_slither_worker, args=(source_files, q))
+        proc.start()
+        proc.join(timeout=config.SLITHER_TIMEOUT)
+
+        if proc.is_alive():
+            proc.terminate()
+            proc.join(5)
+            if proc.is_alive():
+                proc.kill()
+                proc.join(2)
+            log.warning("Slither audit timed out after %ss", config.SLITHER_TIMEOUT)
+            return EngineResult(
+                address="source-tree",
+                error=f"audit timed out after {config.SLITHER_TIMEOUT}s",
+                tool="slither",
+            )
+
+        try:
+            res = q.get_nowait()
+        except Exception:  # noqa: BLE001
+            return EngineResult(
+                address="source-tree", error="audit produced no result", tool="slither"
+            )
+
+    if not res.get("ok"):
+        log.warning("Slither run failed: %s", res.get("error"))
         return EngineResult(
-            address="source-tree", error=f"audit failed: {exc}", tool="slither"
+            address="source-tree", error=f"audit failed: {res.get('error')}", tool="slither"
         )
 
-    return synthesize(findings, address="source-tree", tool="slither")
+    return synthesize(res["findings"], address="source-tree", tool="slither")
 
 
 def _findings_from_slither(sl) -> list[dict]:

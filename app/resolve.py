@@ -31,9 +31,14 @@ def _get(url: str, **kw) -> dict | None:
     return None
 
 
-def fetch_sources(addr: str, rpc: str | None = None) -> tuple[dict[str, str] | None, str | None]:
-    """Return (source_files, warn). warn is set when only a fallback path is possible."""
-    chain_id = _chain_id_from_rpc(rpc)
+def fetch_sources(addr: str, rpc: str | None = None, chain_id: int | None = None) -> tuple[dict[str, str] | None, str | None]:
+    """Return (source_files, warn). warn is set when only a fallback path is possible.
+
+    ``chain_id`` (if given) takes precedence; otherwise it is derived from the
+    RPC endpoint, falling back to the configured default chain.
+    """
+    cid = chain_id or _chain_id_from_rpc(rpc)
+    chain_id = cid
 
     # 1) Sourcify v2 (numeric chain id, sources as {path: {content}})
     try:
