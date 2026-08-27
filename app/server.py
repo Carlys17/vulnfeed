@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
 
-from . import config, core, resolve
+from . import chains, config, core, resolve
 from .validation import normalize_address, validate_rpc
 
 logging.basicConfig(level=os.environ.get("LOG_LEVEL", "INFO"))
@@ -100,6 +100,24 @@ def health() -> dict:
     return {"status": "ok", "intent": config.INTENT, "version": app.version}
 
 
+@app.get("/chains")
+def supported_chains() -> dict:
+    """List EVM chains VulnFeed can analyze (Sourcify + native explorers)."""
+    return {
+        "default_chain_id": config.CHAIN_ID,
+        "supported": [
+            {
+                "chain_id": cid,
+                "name": chains.chain_name(cid),
+                "explorer": "blockscout" if chains.blockscout_url(cid) else "sourcify",
+            }
+            for cid in sorted(chains.CHAIN_NAMES)
+        ],
+        "note": "Any EVM chain with verified Sourcify sources is analyzable; "
+                "pass chain_id in the request or rpc_url to target it.",
+    }
+
+
 @app.get("/intents")
 def intents() -> list[dict]:
     return [
@@ -107,6 +125,7 @@ def intents() -> list[dict]:
             "intent": config.INTENT,
             "deterministic": True,
             "min_price_usdc": config.MIN_PRICE_USDC,
+            "supported_chains": len(chains.CHAIN_NAMES),
         }
     ]
 
@@ -155,8 +174,18 @@ def _run_analysis(address: str | None, chain_id: int | None, rpc_url: str | None
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
+    # Validate chain_id if supplied (must be a positive EVM chain id).
+    if chain_id is not None:
+        if not isinstance(chain_id, int) or chain_id <= 0:
+            raise HTTPException(
+                status_code=400, detail="chain_id must be a positive integer"
+            )
+
+    # Resolve effective chain id for cache key + source resolution.
+    effective_chain = chain_id or config.CHAIN_ID
+
     # Cache key includes address + chain + rpc so distinct targets don't collide.
-    cache_key = f"{addr}:{chain_id or config.CHAIN_ID}:{rpc or 'default'}"
+    cache_key = f"{addr}:{effective_chain}:{rpc or 'default'}"
     cached = _cache_get(cache_key)
     if cached is not None:
         out = dict(cached)
@@ -164,7 +193,7 @@ def _run_analysis(address: str | None, chain_id: int | None, rpc_url: str | None
         out["latency_ms"] = round((time.monotonic() - t0) * 1000, 1)
         return out
 
-    sources, warn = resolve.fetch_sources(addr, rpc, chain_id)
+    sources, warn = resolve.fetch_sources(addr, rpc, effective_chain)
 
     if sources:
         result = core.audit_source(sources)

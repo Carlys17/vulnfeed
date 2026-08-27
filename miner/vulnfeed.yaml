@@ -4,11 +4,13 @@ id: 10001
 slug: vulnfeed-onchain-security
 protocol: generic
 name: VulnFeed On-Chain Security Intelligence
-description: >
-  Deterministic smart-contract security miner for Base. Given a deployed EVM
-  contract address, fetches verified source from Sourcify or Blockscout and
-  returns a structured Slither risk report with ratings, severity counts,
-  exploit probability, and per-finding details.
+description: >-
+  Deterministic multi-chain smart-contract security miner for all EVM networks.
+  Given a deployed EVM contract address (and optional chain_id or rpc_url),
+  fetches verified source from Sourcify or a chain-native explorer and returns a
+  structured Slither risk report with ratings, severity counts, exploit
+  probability, and per-finding details. Supports 30+ EVM chains including
+  Ethereum, Base, Arbitrum, Optimism, Polygon, BNB Chain, Avalanche, and more.
 base_url: https://carly17.my.id/vulnfeed
 
 docs:
@@ -27,7 +29,7 @@ endpoints:
   - path: /v1/analyze
     external_path: /v1/analyze
     method: POST
-    description: Analyze a Base EVM contract address for smart-contract vulnerabilities.
+    description: Analyze an EVM contract address for smart-contract vulnerabilities across any supported EVM chain.
 
 input_schema:
   type: object

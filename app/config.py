@@ -7,10 +7,12 @@ import os
 from dataclasses import dataclass, field
 
 # ---- RPC / network ----
+# Default chain when none is supplied. VulnFeed supports ALL EVM chains via
+# Sourcify (multi-chain) + a per-chain explorer registry (see app/chains.py).
 DEFAULT_RPC_URL = os.environ.get(
     "VULNFEED_RPC_URL", "https://mainnet.base.org"
 )
-CHAIN_ID = int(os.environ.get("VULNFEED_CHAIN_ID", "8453"))  # Base mainnet
+CHAIN_ID = int(os.environ.get("VULNFEED_CHAIN_ID", "8453"))  # Base mainnet (default)
 
 # ---- Timeouts (seconds) ----
 SLITHER_TIMEOUT = int(os.environ.get("VULNFEED_SLITHER_TIMEOUT", "120"))

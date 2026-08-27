@@ -1,9 +1,9 @@
 """External source resolvers: fetch verified Solidity source for an address.
 
 Tries in order, free + no API key required:
-1. Sourcify (server.v2)
-2. Blockscout (Base) getsourcecode
-Falls back to on-chain bytecode heuristics if neither produces source.
+1. Sourcify (server.v2) — multi-chain by numeric chain id
+2. Chain-native Blockscout / explorer API (per-chain registry in chains.py)
+3. On-chain bytecode heuristics if neither produces source.
 """
 
 from __future__ import annotations
@@ -13,12 +13,11 @@ import re
 
 import requests
 
-from . import config
+from . import chains, config
 
 log = logging.getLogger("vulnfeed.resolve")
 
 SOURCIFY = "https://sourcify.dev/server/v2/contract/{chain}/{addr}?fields=sources"
-BLOCKSCOUT = "https://{chain}.blockscout.com/api"  # subdomain per network
 
 
 def _get(url: str, **kw) -> dict | None:
@@ -54,19 +53,24 @@ def fetch_sources(addr: str, rpc: str | None = None, chain_id: int | None = None
     except Exception:  # noqa: BLE001
         pass
 
-    # 2) Blockscout
-    try:
-        chain = "base" if chain_id in (8453, 84532) else "eth"
-        j = _get(f"{BLOCKSCOUT.format(chain=chain)}?module=contract&action=getsourcecode&address={addr}")
-        result = (j or {}).get("result") or [{}]
-        if result and result[0].get("SourceCode"):
-            files = _blockscout_files(result[0])
-            if files:
-                return files, None
-    except Exception:  # noqa: BLE001
-        pass
+    # 2) Chain-native Blockscout / explorer (per-chain registry)
+    bs_url = chains.blockscout_url(chain_id)
+    if bs_url:
+        try:
+            j = _get(
+                f"{bs_url}?module=contract&action=getsourcecode&address={addr}"
+            )
+            result = (j or {}).get("result") or [{}]
+            if result and result[0].get("SourceCode"):
+                files = _blockscout_files(result[0])
+                if files:
+                    return files, None
+        except Exception:  # noqa: BLE001
+            pass
+    elif chain_id not in chains.BLOCKSCOUT_API:  # pragma: no cover - debug aid
+        log.debug("chain %s: no native explorer, relying on Sourcify", chain_id)
 
-    return None, "verified source not found; using bytecode heuristics"
+    return None, f"verified source not found on {chains.chain_name(chain_id)}; using bytecode heuristics"
 
 
 def _blockscout_files(entry: dict) -> dict[str, str] | None:

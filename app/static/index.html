@@ -74,10 +74,10 @@
 <div class="wrap">
   <header>
     <h1>Vuln<span>Feed</span></h1>
-    <p class="tagline">Smart contract security intelligence for Base. Slither-powered analysis via Telegraph Protocol.</p>
+    <p class="tagline">Smart contract security intelligence across all EVM chains. Slither-powered analysis via Telegraph Protocol.</p>
     <div class="badges">
       <span class="badge">intent: ONCHAIN_TX_LOOKUP</span>
-      <span class="badge">chain: Base (8453)</span>
+      <span class="badge">chains: 30+ EVM</span>
       <span class="badge">engine: Slither</span>
       <span class="badge">deterministic</span>
     </div>
@@ -87,6 +87,24 @@
     <label for="addr">Contract address (0x…)</label>
     <div class="row">
       <input type="text" id="addr" placeholder="0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" spellcheck="false">
+      <select id="chain">
+        <option value="1">Ethereum (1)</option>
+        <option value="8453" selected>Base (8453)</option>
+        <option value="42161">Arbitrum (42161)</option>
+        <option value="10">Optimism (10)</option>
+        <option value="137">Polygon (137)</option>
+        <option value="56">BNB Chain (56)</option>
+        <option value="43114">Avalanche (43114)</option>
+        <option value="100">Gnosis (100)</option>
+        <option value="59144">Linea (59144)</option>
+        <option value="534352">Scroll (534352)</option>
+        <option value="7777777">Zora (7777777)</option>
+        <option value="81457">Blast (81457)</option>
+        <option value="324">zkSync (324)</option>
+        <option value="250">Fantom (250)</option>
+        <option value="5000">Mantle (5000)</option>
+        <option value="42220">Celo (42220)</option>
+      </select>
       <button id="go" onclick="analyze()">Analyze</button>
     </div>
     <div class="examples">
@@ -106,10 +124,10 @@
   </div>
 
   <footer>
-    API: <code>POST https://carly17.my.id/vulnfeed/v1/analyze</code> · body <code>{"address":"0x…"}</code><br>
-    Docs: <a href="/vulnfeed/docs">/vulnfeed/docs</a> · Miner YAML: <a href="/vulnfeed/vulnfeed.yaml">vulnfeed.yaml</a> ·
+    API: <code>POST https://carly17.my.id/vulnfeed/v1/analyze</code> · body <code>{"address":"0x…","chain_id":8453}</code><br>
+    Chains: <a href="/vulnfeed/chains">/vulnfeed/chains</a> (30+ EVM) · Docs: <a href="/vulnfeed/docs">/vulnfeed/docs</a> · Miner YAML: <a href="/vulnfeed/vulnfeed.yaml">vulnfeed.yaml</a> ·<br>
     Source: <a href="https://github.com/Carlys17/vulnfeed">github.com/Carlys17/vulnfeed</a><br>
-    Built for the <a href="https://hackathon.telegraphprotocol.com">Telegraph Protocol Hackathon</a> · Season I · Base
+    Built for the <a href="https://hackathon.telegraphprotocol.com">Telegraph Protocol Hackathon</a> · Season I · Multi-EVM
   </footer>
 </div>
 
@@ -138,7 +156,7 @@ async function analyze() {
     const res = await fetch('/vulnfeed/v1/analyze', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ address: addr })
+      body: JSON.stringify({ address: addr, chain_id: parseInt($('chain').value, 10) })
     });
     const d = await res.json();
     if (!res.ok) throw new Error(d.detail || d.error || ('HTTP ' + res.status));
