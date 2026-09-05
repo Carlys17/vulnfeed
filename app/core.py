@@ -11,14 +11,18 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import tempfile
 import threading
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 from . import config
 from .config import EngineResult
 
 log = logging.getLogger("vulnfeed.core")
+
+# Solidity import statements: `import "x";`, `import {A} from "x";`, `import * as y from "x";`
+_IMPORT_RE = re.compile(r"""import\s+(?:[^"';]*?from\s*)?["']([^"']+)["']""")
 
 # Slither receivers are not fully thread-safe; serialize audits.
 _audit_lock = threading.Lock()
@@ -134,6 +138,65 @@ def _safe_relpath(rel: str, base: Path) -> Path | None:
     return p
 
 
+def _pick_entry(written: list[str]) -> str | None:
+    """Pick the best Solidity entry file to pass to Slither.
+
+    Prioritises short, root-level filenames (e.g. ``Contract.sol``,
+    ``src/Foo.sol``) over deep library paths (``lib/foo/bar.sol``).
+    Falls back to the first written file if nothing obvious matches.
+    """
+    root = [f for f in written if f.count("/") <= 1 and f.endswith(".sol")]
+    if root:
+        return sorted(root, key=lambda f: (f.count("/"), f))[0]
+    non_lib = [f for f in written if not f.startswith("lib/")]
+    return non_lib[0] if non_lib else (written[0] if written else None)
+
+
+def _derive_remappings(source_files: dict[str, str]) -> list[str]:
+    """Infer solc import remappings by matching imports against real paths.
+
+    Verified sources keep their build-system layout (foundry ``lib/…``, hardhat
+    ``node_modules/…``) while the code imports through aliases such as
+    ``@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol``.
+    For every import that has no matching file, find the file whose path shares
+    the longest trailing segment run and emit ``alias_prefix=real_prefix``.
+    """
+    paths = set(source_files)
+    imports: set[str] = set()
+    for code in source_files.values():
+        for m in _IMPORT_RE.finditer(code):
+            target = m.group(1)
+            if not target.startswith("."):  # relative imports resolve on disk
+                imports.add(target)
+
+    remaps: dict[str, str] = {}
+    for imp in imports:
+        if imp in paths:
+            continue
+        imp_parts = PurePosixPath(imp).parts
+        best: tuple[int, tuple[str, ...]] | None = None
+        for path in paths:
+            p_parts = PurePosixPath(path).parts
+            n = 0
+            while (
+                n < min(len(imp_parts), len(p_parts))
+                and imp_parts[-1 - n] == p_parts[-1 - n]
+            ):
+                n += 1
+            # Need at least the filename plus one directory to be confident.
+            if n >= 2 and (best is None or n > best[0]):
+                best = (n, p_parts)
+        if not best:
+            continue
+        n, p_parts = best
+        alias = "/".join(imp_parts[: len(imp_parts) - n])
+        real = "/".join(p_parts[: len(p_parts) - n])
+        if alias and real and remaps.get(alias) in (None, real):
+            remaps[alias] = real
+
+    return [f"{alias}/={real}/" for alias, real in sorted(remaps.items())]
+
+
 def _slither_worker(source_files: dict[str, str], result_queue) -> None:
     """Run one Slither audit in an isolated child process.
 
@@ -147,7 +210,7 @@ def _slither_worker(source_files: dict[str, str], result_queue) -> None:
         _patch_natspec()
         with tempfile.TemporaryDirectory(prefix="vulnfeed-") as td:
             base = Path(td)
-            entry = None
+            written: list[str] = []
             for rel, code in source_files.items():
                 p = _safe_relpath(rel, base)
                 if p is None:
@@ -156,11 +219,18 @@ def _slither_worker(source_files: dict[str, str], result_queue) -> None:
                 p.parent.mkdir(parents=True, exist_ok=True)
                 p.write_text(code)
                 if rel.endswith((".sol", ".vy")):
-                    entry = entry or rel
+                    written.append(rel)
 
+            entry = _pick_entry(written)
             if entry is None:
                 result_queue.put({"ok": False, "error": "no Solidity/Vyper source file to analyze"})
                 return
+
+            # Verified sources keep their build-system layout (foundry lib/,
+            # hardhat node_modules/) but import via aliases like
+            # "@openzeppelin/contracts/...". Rebuild those remappings from the
+            # file tree, otherwise every import fails to resolve.
+            remaps = _derive_remappings(source_files)
 
             solcs_bin = _solcs_bin_map()
 
@@ -173,6 +243,7 @@ def _slither_worker(source_files: dict[str, str], result_queue) -> None:
                     solc_solcs_bin=solcs_bin,
                     disable_solc_warnings=True,
                     filter_paths="",
+                    solc_remaps=remaps,
                 )
                 _register_all_detectors(sl)
                 findings = _findings_from_slither(sl)
