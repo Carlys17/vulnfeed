@@ -24,6 +24,12 @@ log = logging.getLogger("vulnfeed.core")
 # Solidity import statements: `import "x";`, `import {A} from "x";`, `import * as y from "x";`
 _IMPORT_RE = re.compile(r"""import\s+(?:[^"';]*?from\s*)?["']([^"']+)["']""")
 
+# Exact compiler pragma: ``pragma solidity 0.8.15;`` — only these pin a
+# specific compiler that cannot fall back to another version.
+_PRAGMA_EXACT_RE = re.compile(
+    r"""pragma\s+solidity\s+(?:pragma\s+)?([0-9]+\.[0-9]+\.[0-9]+)\s*;"""
+)
+
 # Slither receivers are not fully thread-safe; serialize audits.
 _audit_lock = threading.Lock()
 
@@ -95,6 +101,32 @@ def _solcs_bin_map() -> dict:
             if os.path.isfile(bin_path) and ver not in out:
                 out[ver] = bin_path
     return out
+
+
+def _ensure_solc_versions(source_files: dict[str, str]) -> None:
+    """Install any solc version an exact pragma pins but that is missing locally.
+
+    A contract pinned to ``pragma solidity 0.8.15`` cannot be compiled by any
+    other release, so without the exact binary Slither fails on every candidate
+    and the whole audit degrades to analysis_failed. Ranged pragmas (``^0.8.0``,
+    ``>=0.8.0``) are left alone: an already-installed release usually satisfies
+    them, and guessing would download binaries on every scan.
+    """
+    pinned = {
+        m.group(1)
+        for code in source_files.values()
+        for m in _PRAGMA_EXACT_RE.finditer(code)
+    }
+    if not pinned:
+        return
+
+    # Guard: don't touch solc when the package isn't installed (e.g.
+    # venvs shipped without solc-select). Failure is non-fatal.
+    try:
+        import solc_select.solc_select as ss  # noqa: F401
+    except ImportError:
+        log.warning("solc_select not installed; skipping on-demand solc install")
+        return
 
 
 def _register_all_detectors(sl) -> None:
@@ -226,12 +258,8 @@ def _slither_worker(source_files: dict[str, str], result_queue) -> None:
                 result_queue.put({"ok": False, "error": "no Solidity/Vyper source file to analyze"})
                 return
 
-            # Verified sources keep their build-system layout (foundry lib/,
-            # hardhat node_modules/) but import via aliases like
-            # "@openzeppelin/contracts/...". Rebuild those remappings from the
-            # file tree, otherwise every import fails to resolve.
             remaps = _derive_remappings(source_files)
-
+            _ensure_solc_versions(source_files)
             solcs_bin = _solcs_bin_map()
 
             prev_cwd = os.getcwd()
